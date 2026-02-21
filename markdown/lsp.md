@@ -1,4 +1,11 @@
-### 3.7.4 LSP로 코드 인텔리전스 강화하기
+# Claude Code Expert LSP MCP 설명 
+
+작성일: 2026-02-08
+버전: 1.1
+책의 분량상 LSP MCP의 자세한 설명과 활용법은 별도의 MD로 제공합니다. by CodeVillains
+
+
+## LSP로 코드 인텔리전스 강화하기
 
 Claude Code는 기본적으로 텍스트 검색(grep)으로 코드베이스를 탐색한다. 소규모 프로젝트에서는 충분하지만, 파일이 많아지면 검색 속도가 느려지고 주석이나 문자열 안의 동일한 텍스트까지 섞여 들어와 정확도가 떨어진다. 이때 LSP(Language Server Protocol)를 연결하면 Claude Code에 IDE 수준의 코드 네비게이션 능력을 부여할 수 있다.
 

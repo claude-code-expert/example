@@ -1,0 +1,65 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/codevillain/Claude-Code-Expert/example/.claude"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/block-dangerous.py"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/notify-slack.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/notify-telegram.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/format-ts.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/format-py.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/lint-ts.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/lint-py.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/test-ts.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/test-py.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -166,12 +166,12 @@ DATABASE_URL=          # PostgreSQL 연결 문자열 (필수)
 NODE_ENV=              # development | production
 ```
 
-## 참고 문서
+## 개발시 참고해야 할 문서
 
-- [PRD](./docs/PRD.md)
-- [TRD](./docs/TRD.md)
-- [API 문서](./docs/API.md)
-```
+- PRD
+- TRD
+- 설계 문서 (API 설계 문서 혹은 ERD와 같은 문서를 내부 경로로 링크)
+
 
 ---
 
@@ -200,3 +200,4 @@ NODE_ENV=              # development | production
 4. 개발 진행
 
    └─ "REQUIREMENTS.md를 참고해서 TodoItem 컴포넌트를 구현해줘"
+```

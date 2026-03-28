@@ -1,4 +1,5 @@
 # PATTERNS.md
+- AGENTS(java-back).md 에서 참조하는 파일 (.claude/rules/ 하위에 위치)
 
 ## 1. Controller & DTO
 

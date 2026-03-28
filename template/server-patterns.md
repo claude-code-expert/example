@@ -1,5 +1,5 @@
 # Server Code Patterns
-
+- CLAUDE-template(Server).md 에서 참조하는 파일 (.claude/rules/ 하위에 위치)
 ## Route
 ```typescript
 // routes/todos.ts

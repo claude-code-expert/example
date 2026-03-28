@@ -1,5 +1,5 @@
 # Git Workflow Rules
-
+- CLAUDE.md 에서 참조하는 파일 (.claude/rules/ 하위에 위치)
 ## Branch Naming
 ```
 feature/short-description     # new features

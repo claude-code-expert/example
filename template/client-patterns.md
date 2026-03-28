@@ -1,5 +1,5 @@
 # 클라이언트 코드 패턴
-
+- CLAUDE-template(Client).md 에서 참조하는 파일 (.claude/rules/ 하위에 위치)
 ## UI 컴포넌트 (forwardRef 패턴)
 
 ```typescript

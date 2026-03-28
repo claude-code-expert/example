@@ -1,5 +1,5 @@
 # Code Style Rules
-
+- CLAUDE.md 에서 참조하는 파일 (.claude/rules/ 하위에 위치)
 ## General
 - 2-space indentation (no tabs)
 - Single quotes for strings; template literals for interpolation

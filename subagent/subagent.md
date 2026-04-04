@@ -1,5 +1,9 @@
 ## How Subagents Work / 서브에이전트 동작 원리
 
+> 📘 [github.com/claude-code-expert](https://github.com/claude-code-expert) — 클로드 코드 마스터 (한빛미디어 서적 공식 리포지토리) 
+> ☕ [www.brewnet.dev](https://www.brewnet.dev) — 셀프 호스팅 홈서버 자동 구축 오픈소스
+
+
 ### What is a Subagent? / 서브에이전트란?
 
 Claude Code의 서브에이전트는 메인 세션 안에서 **독립된 컨텍스트 윈도우**를 가지고 동작하는 전문화된 AI 인스턴스입니다. 일반적인 채팅에서 Claude에게 "코드 리뷰해줘"라고 하면 모든 분석 과정과 결과가 하나의 대화 컨텍스트에 쌓이지만, 서브에이전트에 위임하면 분석은 별도 윈도우에서 일어나고 메인에는 요약만 돌아옵니다.

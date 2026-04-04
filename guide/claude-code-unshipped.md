@@ -1,8 +1,8 @@
 # Claude Code — 미공개 예정 기능 분석
 
-> 📘 [github.com/claude-code-expert](https://github.com/claude-code-expert) — 클로드 코드 마스터 (한빛미디어 서적 공식 리포지토리) | 🍺 [www.brewnet.dev](https://www.brewnet.dev) — 셀프 호스팅 홈서버 자동 구축 오픈소스
+> 📘 [github.com/claude-code-expert](https://github.com/claude-code-expert) — 클로드 코드 마스터 (한빛미디어 서적 공식 리포지토리) 
+> ☕ [www.brewnet.dev](https://www.brewnet.dev) — 셀프 호스팅 홈서버 자동 구축 오픈소스
 
-> **src.zip** · 2026-03-31 · 소스 번들 정적 분석 기반 · 비공식 추출 · 한국어 분석 · brewnet course reference
 
 ---
 

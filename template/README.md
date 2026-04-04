@@ -1,30 +1,203 @@
-# CLAUDE.md 멀티턴 방어 설계 가이드
-
-> LLM은 멀티턴 대화에서 평균 39% 성능이 하락한다. 초기 턴에서 잘못된 가정을 하면 이후 복구하지 못한다.
-> 이 문서는 CLAUDE.md, Hooks, 작업 구조화를 통해 이 문제를 방어하는 실전 패턴을 정리한다.
+# [Claude Code Expert](https://github.com/claude-code-expert) 서적의 예제 문서 모음
 
 > 📘 [github.com/claude-code-expert](https://github.com/claude-code-expert) — 클로드 코드 마스터 (한빛미디어 서적 공식 리포지토리)
-
 > ☕ [www.brewnet.dev](https://www.brewnet.dev) — 셀프 호스팅 홈서버 자동 구축 오픈소스
+
+# Template 디렉토리 가이드
+
+> 이 디렉토리는 AI 코딩 에이전트(Claude Code, Cursor, Codex 등)에게 프로젝트 맥락을 전달하는 지침 파일 템플릿 모음이다.
+> 각 파일은 독립적으로 사용할 수도 있고, `@` 참조로 연결하여 계층 구조를 구성할 수도 있다.
 
 ---
 
 ## 목차
 
-1. [문제 정의: 왜 멀티턴에서 성능이 떨어지는가](#1-문제-정의)
-2. [방어 계층 구조](#2-방어-계층-구조)
-3. [Layer 1: CLAUDE.md 지시사항](#3-layer-1-claudemd-지시사항)
-4. [Layer 2: Hooks 자동 가드레일](#4-layer-2-hooks-자동-가드레일)
-5. [Layer 3: 작업 구조화](#5-layer-3-작업-구조화)
-6. [Layer 4: 사용자 습관](#6-layer-4-사용자-습관)
-7. [완성 템플릿](#7-완성-템플릿)
-8. [참고 자료](#8-참고-자료)
+1. [파일 목록 및 역할](#1-파일-목록-및-역할)
+2. [파일 연관 관계도](#2-파일-연관-관계도)
+3. [사용 시나리오별 조합](#3-사용-시나리오별-조합)
+4. [멀티턴 방어 설계 가이드](#4-멀티턴-방어-설계-가이드)
 
 ---
 
-## 1. 문제 정의
+## 1. 파일 목록 및 역할
 
-### 연구 배경
+### CLAUDE.md 계열 — 프로젝트 지침 (Claude Code용)
+
+| 파일 | 역할 | 대상 프로젝트 |
+|------|------|-------------|
+| `CLAUDE.md` | 싱글 프로젝트용 기본 템플릿. 프로젝트 개요, 명령어, 조사 규칙, 가드레일 포함 | Next.js 단일 앱 |
+| `CLAUDE-template(Root).md` | 모노레포 루트용. 공통 규칙을 정의하고 하위 패키지가 상속 | pnpm 모노레포 |
+| `CLAUDE-template(Client).md` | 모노레포 클라이언트 패키지용. Next.js/React 특화 규칙 | `packages/client` |
+| `CLAUDE-template(Server).md` | 모노레포 서버 패키지용. Express/Prisma 특화 규칙 | `packages/server` |
+| `CLAUDE.local.md` | 개인 환경 설정 (`.gitignore`에 추가). OS, Node 버전, 개인 선호 | 모든 프로젝트 |
+
+### AGENTS.md 계열 — 프로젝트 지침 (범용)
+
+| 파일 | 역할 | 대상 |
+|------|------|------|
+| `AGENTS-Guide.md` | AGENTS.md 작성 방법 가이드. 필수 섹션, 핵심 원칙, 도구별 파일명 안내 | 가이드 문서 |
+| `AGENTS-template.md` | AGENTS.md 빈 템플릿. 섹션 구조만 제공 | 모든 프로젝트 |
+| `AGENTS(java-back).md` | Java/Spring Boot 백엔드 실전 예시. Layered Architecture 규칙 포함 | Spring Boot 프로젝트 |
+
+### Rules 파일 — `@` 참조로 CLAUDE.md에서 불러오는 세부 규칙
+
+| 파일 | 참조하는 상위 파일 | 내용 |
+|------|-----------------|------|
+| `code-style.md` | `CLAUDE.md` | TypeScript, React, 파일 네이밍, import 순서, 에러 핸들링 |
+| `root-code-style.md` | `CLAUDE-template(Root).md` | 모노레포 전역 코드 스타일 (네이밍, TS strict, API 응답 형식) |
+| `testing.md` | `CLAUDE.md` | Vitest/Playwright/RTL 스택, 테스트 작성 패턴, 커버리지 목표 |
+| `git-workflow.md` | `CLAUDE.md` | 브랜치 네이밍, Conventional Commits, PR 규칙, 머지 전략 |
+| `client-patterns.md` | `CLAUDE-template(Client).md` | forwardRef, TanStack Query, API 클라이언트, 컴포넌트 테스트 패턴 |
+| `server-patterns.md` | `CLAUDE-template(Server).md` | Route→Controller→Service→Repository 코드 패턴, 에러 핸들링 |
+| `patterns.md` | `AGENTS(java-back).md` | Java Controller/Service/Repository/Test 코드 패턴 |
+
+### 기타
+
+| 파일 | 역할 |
+|------|------|
+| `skill-template.md` | Claude Code 커스텀 Skill 작성 템플릿 (frontmatter + Instructions) |
+
+---
+
+## 2. 파일 연관 관계도
+
+### `@` 참조 관계
+
+`CLAUDE.md`와 `AGENTS.md`는 `@파일경로` 문법으로 다른 파일을 참조할 수 있다. 참조된 파일은 Claude Code가 자동으로 컨텍스트에 포함시킨다.
+
+```
+싱글 프로젝트
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CLAUDE.md
+ ├── @.claude/rules/code-style.md
+ ├── @.claude/rules/testing.md
+ └── @.claude/rules/git-workflow.md
+
+
+모노레포 (pnpm workspace)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CLAUDE-template(Root).md          ← 루트 (packages/ 상위)
+ └── @.claude/rules/root-code-style.md
+
+CLAUDE-template(Client).md       ← packages/client/CLAUDE.md
+ └── @.claude/rules/client-patterns.md
+
+CLAUDE-template(Server).md       ← packages/server/CLAUDE.md
+ └── @.claude/rules/server-patterns.md
+
+
+Java 백엔드
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AGENTS(java-back).md
+ └── @docs/patterns.md
+```
+
+### 상속 구조
+
+모노레포에서는 루트 `CLAUDE.md`가 전체에 적용되고, 각 패키지의 `CLAUDE.md`가 해당 디렉토리에서 추가 규칙을 적용한다:
+
+```
+프로젝트 루트/
+├── CLAUDE.md                         ← CLAUDE-template(Root).md 기반
+│   (공통: 언어 규칙, 조사 원칙, Git 가드레일)
+│
+├── packages/client/CLAUDE.md         ← CLAUDE-template(Client).md 기반
+│   (추가: Server/Client 컴포넌트 규칙, 스타일링, 테스트)
+│
+├── packages/server/CLAUDE.md         ← CLAUDE-template(Server).md 기반
+│   (추가: Request flow, Prisma 가드레일, 에러 핸들링)
+│
+└── CLAUDE.local.md                   ← 개인 설정 (.gitignore에 포함)
+    (OS, Node 버전, 개인 선호)
+```
+
+**규칙 병합 순서** (낮은 → 높은 우선순위):
+
+```
+루트 CLAUDE.md → 패키지 CLAUDE.md → CLAUDE.local.md
+```
+
+동일 규칙이 충돌하면 하위(패키지) 설정이 우선한다.
+
+### CLAUDE.md vs AGENTS.md
+
+| | CLAUDE.md | AGENTS.md |
+|--|-----------|-----------|
+| **대상 도구** | Claude Code 전용 | 범용 (Claude Code, Cursor, Codex 등) |
+| **자동 로드** | Claude Code가 자동 인식 | 에이전트에게 먼저 읽으라고 지시 필요 |
+| **`@` 참조** | 지원 (자동 컨텍스트 포함) | 도구에 따라 다름 |
+| **호환 방법** | `ln -s AGENTS.md CLAUDE.md` | - |
+
+둘의 내부 구조(섹션 구성)는 동일하다. 도구에 맞는 파일명을 선택하면 된다.
+
+---
+
+## 3. 사용 시나리오별 조합
+
+### 시나리오 A: Next.js 단일 프로젝트
+
+```
+복사할 파일:
+  CLAUDE.md              → 프로젝트 루트/CLAUDE.md
+  code-style.md          → .claude/rules/code-style.md
+  testing.md             → .claude/rules/testing.md
+  git-workflow.md        → .claude/rules/git-workflow.md
+  CLAUDE.local.md        → 프로젝트 루트/CLAUDE.local.md (.gitignore 추가)
+```
+
+### 시나리오 B: pnpm 모노레포 (React + Express)
+
+```
+복사할 파일:
+  CLAUDE-template(Root).md     → 프로젝트 루트/CLAUDE.md
+  CLAUDE-template(Client).md   → packages/client/CLAUDE.md
+  CLAUDE-template(Server).md   → packages/server/CLAUDE.md
+  root-code-style.md           → .claude/rules/root-code-style.md
+  client-patterns.md           → .claude/rules/client-patterns.md
+  server-patterns.md           → .claude/rules/server-patterns.md
+  git-workflow.md              → .claude/rules/git-workflow.md
+  CLAUDE.local.md              → 프로젝트 루트/CLAUDE.local.md
+```
+
+### 시나리오 C: Spring Boot 백엔드 (Java)
+
+```
+복사할 파일:
+  AGENTS(java-back).md   → 프로젝트 루트/AGENTS.md (또는 CLAUDE.md)
+  patterns.md            → docs/patterns.md
+  git-workflow.md        → .claude/rules/git-workflow.md
+```
+
+### 시나리오 D: 새 프로젝트 (프레임워크 미정)
+
+```
+복사할 파일:
+  AGENTS-template.md     → 프로젝트 루트/AGENTS.md (빈 템플릿에서 시작)
+  AGENTS-Guide.md        → 작성 가이드로 참고 (프로젝트에 포함하지 않음)
+```
+
+### 시나리오 E: Claude Code Skill 제작
+
+```
+참고 파일:
+  skill-template.md      → ~/.claude/skills/ 또는 프로젝트 .claude/skills/에 작성
+```
+
+---
+
+## 4. 멀티턴 방어 설계 가이드
+
+> LLM은 멀티턴 대화에서 평균 39% 성능이 하락한다. 초기 턴에서 잘못된 가정을 하면 이후 복구하지 못한다.
+> 이 섹션은 CLAUDE.md, Hooks, 작업 구조화를 통해 이 문제를 방어하는 실전 패턴을 정리한다.
+
+---
+
+### 4.1 문제 정의
+
+#### 연구 배경
 
 LLM의 멀티턴 대화에서 성능이 저하되는 원인은 두 가지로 분해된다:
 
@@ -33,7 +206,7 @@ LLM의 멀티턴 대화에서 성능이 저하되는 원인은 두 가지로 분
 | **Aptitude Loss** | 경미 | 턴이 늘어날수록 모델 능력 자체가 소폭 하락 |
 | **Unreliability** | 심각 | 초기 턴에서 잘못된 가정 → 끝까지 고수 → 복구 불가 |
 
-### 실제 코딩 작업에서의 증상
+#### 실제 코딩 작업에서의 증상
 
 ```
 사용자: "로그인이 안 돼"
@@ -45,7 +218,7 @@ Claude: 토큰 갱신 코드 위에 해싱 로직을 덧붙임 → 꼬인 코드
 
 **핵심**: 첫 턴에서 "토큰 만료"라고 가정한 순간, 이후 대화 전체가 오염된다.
 
-### 왜 Claude Code에서 특히 문제인가
+#### 왜 Claude Code에서 특히 문제인가
 
 | 상황 | 위험도 | 이유 |
 |------|--------|------|
@@ -56,7 +229,7 @@ Claude: 토큰 갱신 코드 위에 해싱 로직을 덧붙임 → 꼬인 코드
 
 ---
 
-## 2. 방어 계층 구조
+### 4.2 방어 계층 구조
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -83,9 +256,9 @@ Claude: 토큰 갱신 코드 위에 해싱 로직을 덧붙임 → 꼬인 코드
 
 ---
 
-## 3. Layer 1: CLAUDE.md 지시사항
+### 4.3 Layer 1: CLAUDE.md 지시사항
 
-### 3.1 조기 가정 방지 (Early Assumption Guard)
+#### 4.3.1 조기 가정 방지 (Early Assumption Guard)
 
 **원리**: LLM이 초기 턴에서 가정하고 솔루션을 조기 생성하는 것을 막는다.
 
@@ -141,7 +314,7 @@ Claude: 먼저 관련 파일을 확인하겠습니다.
   → "bcrypt 버전 불일치로 해싱 결과가 다릅니다" (사실 기반 진단)
 ```
 
-### 3.2 체크포인트 강제 (Drift Prevention)
+#### 4.3.2 체크포인트 강제 (Drift Prevention)
 
 **원리**: 멀티턴에서 방향이 서서히 틀어지는 것을 감지하는 장치.
 
@@ -173,7 +346,7 @@ Turn 7: OAuth 로그인도 있으면 좋겠다... 추가
 Turn 9: 사용자 "나는 간단한 회원가입만 원했는데 왜 이렇게 복잡해?"
 ```
 
-### 3.3 실패 시 복구 전략 (Recovery Protocol)
+#### 4.3.3 실패 시 복구 전략 (Recovery Protocol)
 
 **원리**: "wrong turn → lost" 문제를 직접 방어. 같은 방향으로 계속 실패하는 루프를 끊는다.
 
@@ -207,7 +380,7 @@ Claude: "2번 실패했습니다. 접근을 바꾸겠습니다."
 시도 5: ...계속 같은 방향... (wrong turn → lost)
 ```
 
-### 3.4 컨텍스트 압축 대비 (Compaction Defense)
+#### 4.3.4 컨텍스트 압축 대비 (Compaction Defense)
 
 **원리**: `/compact` 또는 자동 컨텍스트 압축 시 초기 지시사항이 유실되는 문제 방어.
 
@@ -248,9 +421,9 @@ Turn 1-20: 복잡한 리팩토링 진행 중
 
 ---
 
-## 4. Layer 2: Hooks 자동 가드레일
+### 4.4 Layer 2: Hooks 자동 가드레일
 
-### 4.1 왜 Hooks가 필요한가
+#### 4.4.1 왜 Hooks가 필요한가
 
 CLAUDE.md 지시사항은 **권고**다. LLM이 무시할 수 있다.
 Hooks는 **강제**다. 코드가 실행되므로 LLM이 우회할 수 없다.
@@ -261,7 +434,7 @@ Hooks는 **강제**다. 코드가 실행되므로 LLM이 우회할 수 없다.
 | Hooks | 강함 | 코드 실행, 우회 불가 | 이벤트 기반 |
 | settings.json deny | 절대적 | 시스템 레벨 차단 | 도구 호출 시 |
 
-### 4.2 Stop Hook — 작업 완료 시 검증
+#### 4.4.2 Stop Hook — 작업 완료 시 검증
 
 **원리**: Claude가 응답을 끝낼 때마다 원래 요청과 결과를 비교하도록 상기시킨다.
 
@@ -305,7 +478,7 @@ Turn 5: OAuth 연동 코드를 작성하고 있음
             궤도를 벗어났네요. 원래 요청으로 돌아가겠습니다.
 ```
 
-### 4.3 PostToolUse Hook — 파일 수정 후 자동 검증
+#### 4.4.3 PostToolUse Hook — 파일 수정 후 자동 검증
 
 **원리**: 파일을 수정할 때마다 린트, 타입 체크를 자동 실행하여 잘못된 코드가 누적되는 것을 방지.
 
@@ -347,7 +520,7 @@ Turn 7: middleware.ts 수정 (에러 누적)
 Turn 9: "왜 빌드가 안 되지?" → 3개 파일의 꼬인 타입 에러를 한꺼번에 수정해야 함
 ```
 
-### 4.4 PreToolUse Hook — 위험한 작업 사전 차단
+#### 4.4.4 PreToolUse Hook — 위험한 작업 사전 차단
 
 **원리**: 잘못된 방향으로 갈 때 위험한 작업을 실행하기 전에 차단.
 
@@ -387,7 +560,7 @@ Claude: (잘못된 방향으로) 테이블을 다시 만들자 → DROP TABLE to
   → Claude: "위험한 명령어가 차단되었습니다. 다른 접근을 시도하겠습니다."
 ```
 
-### 4.5 SubagentStop Hook — 서브에이전트 검증
+#### 4.4.5 SubagentStop Hook — 서브에이전트 검증
 
 **원리**: 서브에이전트는 대화 맥락이 없으므로, 결과를 원래 목표와 대조해야 한다.
 
@@ -409,7 +582,7 @@ Claude: (잘못된 방향으로) 테이블을 다시 만들자 → DROP TABLE to
 }
 ```
 
-### 4.6 통합 Hook 설정
+#### 4.4.6 통합 Hook 설정
 
 위 모든 Hook을 하나의 settings.json으로 통합한 예시:
 
@@ -480,9 +653,9 @@ Claude: (잘못된 방향으로) 테이블을 다시 만들자 → DROP TABLE to
 
 ---
 
-## 5. Layer 3: 작업 구조화
+### 4.5 Layer 3: 작업 구조화
 
-### 5.1 Plan → Task → Checkpoint → Verify 패턴
+#### 4.5.1 Plan → Task → Checkpoint → Verify 패턴
 
 **원리**: 복잡한 작업을 미리 구조화하면 각 단계에서 방향을 확인할 수 있다.
 
@@ -524,7 +697,7 @@ Claude: "모든 단계 완료. 원래 요청 '회원가입 기능'에 대해:
   ✅ User 모델, ✅ API, ✅ 폼, ✅ 검증, ✅ 테스트"
 ```
 
-### 5.2 외부화 (Externalization)
+#### 4.5.2 외부화 (Externalization)
 
 작업 상태를 대화 컨텍스트가 아닌 외부 도구에 저장하면, compact 후에도 유지된다.
 
@@ -538,9 +711,9 @@ Claude: "모든 단계 완료. 원래 요청 '회원가입 기능'에 대해:
 
 ---
 
-## 6. Layer 4: 사용자 습관
+### 4.6 Layer 4: 사용자 습관
 
-### 6.1 단일 턴 완결 프롬프트
+#### 4.6.1 단일 턴 완결 프롬프트
 
 **가장 효과적인 방어**: 멀티턴 자체를 줄이면 성능 저하가 발생하지 않는다.
 
@@ -571,7 +744,7 @@ Turn 1: "로그인 시 401 반환되는 버그 수정.
 | 어떤 상태 | 유효한 비밀번호로 401 반환됨 |
 | 기대 결과 | 200 + JWT 토큰 반환 |
 
-### 6.2 중간 확인 습관
+#### 4.6.2 중간 확인 습관
 
 장기 작업에서 5턴마다 한 번씩 확인:
 
@@ -583,7 +756,7 @@ Claude: "원래 요청: X. 현재 진행: Y 완료, Z 진행 중. 범위 변경 
 
 이 한 턴이 drift를 초기에 잡아준다.
 
-### 6.3 새 세션 활용
+#### 4.6.3 새 세션 활용
 
 의미 있는 방향 전환이 필요할 때는 같은 대화를 이어가지 말고 새 세션을 시작한다:
 
@@ -601,7 +774,7 @@ claude "로그인 시 401 에러 수정. bcrypt 해싱 불일치가 원인. src/
 
 ---
 
-## 7. 완성 템플릿
+### 4.7 완성 템플릿
 
 아래는 멀티턴 방어가 적용된 CLAUDE.md 전체 템플릿이다. 프로젝트에 맞게 `[placeholder]`를 수정하여 사용한다.
 
@@ -675,14 +848,14 @@ claude "로그인 시 401 에러 수정. bcrypt 해싱 불일치가 원인. src/
 
 ---
 
-## 8. 참고 자료
+### 4.8 참고 자료
 
-### 이 가이드의 근거
+#### 이 가이드의 근거
 
 - **연구**: "When LLMs Take a Wrong Turn in a Conversation, They Get Lost and Do Not Recover" — 200,000+ 시뮬레이션 대화 분석, 6개 생성 작업에서 평균 39% 성능 하락 확인
 - **핵심 발견**: Aptitude loss(경미) + Unreliability(심각). 초기 턴의 잘못된 가정이 전체 대화를 오염시킴
 
-### 방어 수단별 효과
+#### 방어 수단별 효과
 
 | 방어 수단 | 효과 | 구현 난이도 | 적용 위치 |
 |----------|------|-----------|----------|
@@ -696,7 +869,7 @@ claude "로그인 시 401 에러 수정. bcrypt 해싱 불일치가 원인. src/
 | Task 외부화 | 중간 | 쉬움 | 작업 방식 |
 | 새 세션 활용 | 높음 | 쉬움 | 사용자 습관 |
 
-### 관련 문서
+#### 관련 문서
 
 - `CLAUDE.md` — 기본 프로젝트 템플릿
 - `CLAUDE.local.md` — 개인 설정 템플릿

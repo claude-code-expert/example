@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code — 미공개 예정 기능 분석</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #f5f2eb;
+  --paper:    #faf8f3;
+  --ink:      #1a1714;
+  --ink2:     #3d3830;
+  --muted:    #8c8479;
+  --rule:     #d8d2c6;
+
+  --major-accent: #c0392b;
+  --major-dim:    #f5e8e6;
+  --major-border: #e8c4bf;
+
+  --inflight-accent: #b8860b;
+  --inflight-dim:    #f5f0e0;
+  --inflight-border: #e0d0a0;
+
+  --infra-accent: #2563b0;
+  --infra-dim:    #e8f0f8;
+  --infra-border: #b8d0e8;
+
+  --dev-accent:   #1a7a4a;
+  --dev-dim:      #e6f4ec;
+  --dev-border:   #a8d8bc;
+
+  --unk-accent:   #5a5a5a;
+  --unk-dim:      #eeeeee;
+  --unk-border:   #cccccc;
+
+  --font-sans: 'Noto Sans KR', 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 0;
+}
+
+.wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 32px 60px;
+}
+
+/* ── HEADER ── */
+.site-header {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.site-header h1 {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.site-header h1 span { color: var(--major-accent); }
+.header-meta {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.header-meta strong { color: var(--ink2); }
+
+/* ── WARNING BANNER ── */
+.warn-banner {
+  background: #fff8e1;
+  border: 1px solid #f0c040;
+  border-left: 4px solid #e6a817;
+  border-radius: 4px;
+  padding: 12px 18px;
+  margin-bottom: 32px;
+  font-size: 0.8rem;
+  color: #5a4a00;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.warn-banner .wi { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+/* ── SECTION ── */
+.section {
+  margin-bottom: 40px;
+}
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.section-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.section-rule {
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.25;
+}
+
+/* ── CARDS GRID ── */
+.cards {
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.cards.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.cards.cols-6 { grid-template-columns: repeat(6, 1fr); }
+.cards.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.cards.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* ── CARD ── */
+.card {
+  background: var(--paper);
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  transition: background 0.15s;
+}
+.card:hover { background: #fff; }
+
+.card-name {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+.card-en {
+  font-size: 0.73rem;
+  color: var(--ink2);
+  line-height: 1.5;
+  border-bottom: 1px dashed var(--rule);
+  padding-bottom: 8px;
+}
+.card-ko {
+  font-size: 0.73rem;
+  color: #2a5080;
+  line-height: 1.6;
+}
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* accent stripe on left */
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+
+/* section-specific accents */
+.major .card::before   { background: var(--major-accent); }
+.inflight .card::before { background: var(--inflight-accent); }
+.infra .card::before   { background: var(--infra-accent); }
+.dev .card::before     { background: var(--dev-accent); }
+.unk .card::before     { background: var(--unk-accent); }
+
+.major   .section-dot { background: var(--major-accent); }
+.inflight .section-dot { background: var(--inflight-accent); }
+.infra   .section-dot { background: var(--infra-accent); }
+.dev     .section-dot { background: var(--dev-accent); }
+.unk     .section-dot { background: var(--unk-accent); }
+
+.major   .section-title { color: var(--major-accent); }
+.inflight .section-title { color: var(--inflight-accent); }
+.infra   .section-title { color: var(--infra-accent); }
+.dev     .section-title { color: var(--dev-accent); }
+.unk     .section-title { color: var(--unk-accent); }
+
+/* tag colors by section */
+.major   .tag { background: var(--major-dim);    color: var(--major-accent);    border: 1px solid var(--major-border); }
+.inflight .tag { background: var(--inflight-dim); color: var(--inflight-accent); border: 1px solid var(--inflight-border); }
+.infra   .tag { background: var(--infra-dim);    color: var(--infra-accent);    border: 1px solid var(--infra-border); }
+.dev     .tag { background: var(--dev-dim);      color: var(--dev-accent);      border: 1px solid var(--dev-border); }
+.unk     .tag { background: var(--unk-dim);      color: var(--unk-accent);      border: 1px solid var(--unk-border); }
+
+/* ── DETAIL EXPAND ── */
+.detail {
+  background: #fffef9;
+  border: 1px solid var(--rule);
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  padding: 18px 22px;
+  margin-bottom: 40px;
+  margin-top: -40px;
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+.detail-block h4 {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.detail-block p {
+  font-size: 0.72rem;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.detail-block code {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  background: #eeeadf;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+/* ── TIMELINE BAR ── */
+.timeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 40px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 0.7rem;
+}
+.tl-item {
+  flex: 1;
+  padding: 10px 14px;
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+}
+.tl-item:last-child { border-right: none; }
+.tl-label {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.tl-count {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.tl-desc { color: var(--muted); font-size: 0.65rem; line-height: 1.4; }
+
+/* ── LEGEND ── */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+  font-size: 0.68rem;
+  color: var(--muted);
+  align-items: center;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+
+/* ── FOOTER ── */
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 20px;
+  margin-top: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.site-footer a { color: var(--infra-accent); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1000px) {
+  .cards.cols-4 { grid-template-columns: repeat(2, 1fr); }
+  .cards.cols-6 { grid-template-columns: repeat(3, 1fr); }
+  .cards.cols-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .wrap { padding: 20px 16px 40px; }
+  .cards.cols-4,
+  .cards.cols-6,
+  .cards.cols-3,
+  .cards.cols-2 { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .timeline { flex-direction: column; }
+  .tl-item { border-right: none; border-bottom: 1px solid var(--rule); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <h1>Claude Code — <span>unshipped features</span></h1>
+    <div class="header-meta">
+      <div><strong>src.zip</strong> · 2026-03-31</div>
+      <div>소스 번들 정적 분석 기반 · 비공식 추출</div>
+      <div>한국어 분석 · brewnet course reference</div>
+    </div>
+  </header>
+
+  <!-- WARNING -->
+  <div class="warn-banner">
+    <span class="wi">⚠️</span>
+    <div>
+      <strong>유출 경위:</strong> 2026년 3월 31일, 보안 연구자 Chaofan Shou가 Claude Code npm 패키지(v2.1.88)에 <code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">.npmignore</code>에서 제외되지 않은 소스맵 파일(<code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">main.js.map</code>)을 발견, Anthropic R2 버킷에서 <code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">src.zip</code>을 직접 다운로드. 512,000줄 TypeScript 소스코드 전체가 노출됨. Anthropic이 유출 사실을 공식 확인. <strong>이미지 출처: npm 유출 소스 분석 기반 커뮤니티 시각화 자료</strong> (cc.storyfox.cz와 무관). Anthropic 공식 발표 아님 — 교육·리서치 참고용.
+    </div>
+  </div>
+
+  <!-- TIMELINE OVERVIEW -->
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-label" style="color:var(--major-accent);">● MAJOR</div>
+      <div class="tl-count" style="color:var(--major-accent);">4</div>
+      <div class="tl-desc">대형 아키텍처 변화·전략적 기능<br>KAIROS, Coordinator 등</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label" style="color:var(--inflight-accent);">● IN-FLIGHT</div>
+      <div class="tl-count" style="color:var(--inflight-accent);">6</div>
+      <div class="tl-desc">개발 진행 중·일부 코드 존재<br>브라우저 툴, SSH, 자율 에이전트</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label" style="color:var(--infra-accent);">● INFRASTRUCTURE</div>
+      <div class="tl-count" style="color:var(--infra-accent);">4</div>
+      <div class="tl-desc">내부 기반 기술 강화<br>컨텍스트·메모리·권한 자동화</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label" style="color:var(--dev-accent);">● DEV TOOLING</div>
+      <div class="tl-count" style="color:var(--dev-accent);">6</div>
+      <div class="tl-desc">개발자 생산성 도구<br>터미널, MCP 스킬, 커밋 추적</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label" style="color:var(--unk-accent);">● UNKNOWN / INTERNAL</div>
+      <div class="tl-count" style="color:var(--unk-accent);">3</div>
+      <div class="tl-desc">플래그 존재·미연결 상태<br>Anthropic 내부 전용 툴 포함</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: MAJOR
+  ══════════════════════════════════════ -->
+  <section class="section major">
+    <div class="section-label">
+      <div class="section-dot"></div>
+      <div class="section-title">Major</div>
+      <div class="section-rule"></div>
+      <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">전략적 대형 기능 · 아키텍처 변화 수반</div>
+    </div>
+
+    <div class="cards cols-4">
+
+      <!-- KAIROS -->
+      <div class="card">
+        <div class="card-name">KAIROS</div>
+        <div class="card-en">Always-on background assistant with channels, push notifications, and GitHub webhook subscriptions.</div>
+        <div class="card-ko">
+          <strong>항상 켜져 있는 백그라운드 어시스턴트.</strong> (그리스어 "적절한 시간" 어원, 소스 내 150회 이상 언급)<br><br>
+          Claude Code가 터미널을 닫은 후에도 백그라운드 데몬으로 살아 있어 채널 메시지, 푸시 알림, GitHub 웹훅에 반응합니다. 핵심 메커니즘:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>autoDream</strong>: 사용자가 자리를 비운 야간 시간에 실행되는 메모리 통합 프로세스. 이전 세션의 관찰을 병합하고, 논리적 모순을 제거하고, 막연한 메모를 확정 사실로 변환함</li>
+            <li><strong>append-only 일일 로그</strong>: 관찰 내용을 날짜별로 누적 기록</li>
+            <li><strong>Brief 출력 모드</strong>: 상시 어시스턴트용 간결 응답 모드</li>
+            <li>사용자 복귀 시 컨텍스트가 깔끔하게 정리된 상태로 세션 재개</li>
+          </ul>
+        </div>
+        <div class="card-tags">
+          <span class="tag">daemon</span>
+          <span class="tag">autoDream</span>
+          <span class="tag">memory consolidation</span>
+          <span class="tag">webhook</span>
+          <span class="tag">150+ mentions</span>
+        </div>
+      </div>
+
+      <!-- COORDINATOR_MODE -->
+      <div class="card">
+        <div class="card-name">COORDINATOR_MODE</div>
+        <div class="card-en">One Claude orchestrates N worker Claudes with a restricted toolset per worker.</div>
+        <div class="card-ko">
+          <strong>멀티-에이전트 오케스트레이션 모드.</strong><br>
+          메인 Claude 인스턴스가 <strong>메일박스 시스템</strong>을 통해 여러 병렬 워커 에이전트를 조율합니다. 구조:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>Coordinator</strong>: 태스크 분해 → 워커 배정 → 결과 취합</li>
+            <li><strong>Worker</strong>: 제한된 툴셋만 허용, 각자 독립 서브태스크 처리</li>
+            <li>멀티스레딩이 아닌, 실제 팀처럼 역할 분리된 병렬 에이전트 집합</li>
+          </ul>
+          소스 내 연구→합성→구현 단계로 구조화된 것이 확인됨. <code>/batch</code>와 달리 중앙 컨트롤 타워가 지속적으로 조율.
+        </div>
+        <div class="card-tags">
+          <span class="tag">orchestration</span>
+          <span class="tag">mailbox system</span>
+          <span class="tag">multi-agent</span>
+          <span class="tag">parallel</span>
+          <span class="tag">toolset isolation</span>
+        </div>
+      </div>
+
+      <!-- AGENT_TRIGGERS -->
+      <div class="card">
+        <div class="card-name">AGENT_TRIGGERS</div>
+        <div class="card-en">Cron scheduling for agents — create, delete, list jobs. External webhook trigger variant included.</div>
+        <div class="card-ko">
+          <strong>에이전트용 크론 스케줄링 + 외부 웹훅 트리거.</strong><br>
+          특정 시간 또는 외부 이벤트(웹훅)에 의해 Claude 에이전트가 자동 실행됩니다. 잡 생성·삭제·목록 조회 인터페이스 포함.<br><br>
+          현재 <code>/loop [interval]</code>은 대화 내에서만 동작하지만, AGENT_TRIGGERS는 세션 외부에서도 독립적으로 에이전트를 깨울 수 있는 더 강력한 트리거 시스템입니다.
+        </div>
+        <div class="card-tags">
+          <span class="tag">cron</span>
+          <span class="tag">webhook trigger</span>
+          <span class="tag">job scheduling</span>
+          <span class="tag">automation</span>
+        </div>
+      </div>
+
+      <!-- VOICE_MODE -->
+      <div class="card">
+        <div class="card-name">VOICE_MODE</div>
+        <div class="card-en">Full voice command interface with its own CLI entrypoint.</div>
+        <div class="card-ko">
+          <strong>독립 CLI 진입점을 가진 완전한 음성 명령 인터페이스.</strong><br>
+          현재 <code>/voice</code> 명령어는 push-to-talk 딕테이션 수준이지만, VOICE_MODE는 별도의 CLI 엔트리포인트를 갖는 완전한 음성 제어 모드입니다.<br><br>
+          <em>"claude-voice" 같은 별도 명령으로 실행될 가능성. 20개 언어 지원은 이미 확인됨.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">voice</span>
+          <span class="tag">CLI entrypoint</span>
+          <span class="tag">speech-to-text</span>
+          <span class="tag">multimodal</span>
+        </div>
+      </div>
+
+    </div><!-- /cards major -->
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: IN-FLIGHT
+  ══════════════════════════════════════ -->
+  <section class="section inflight">
+    <div class="section-label">
+      <div class="section-dot"></div>
+      <div class="section-title">In-Flight</div>
+      <div class="section-rule"></div>
+      <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">개발 진행 중 · 소스 내 일부 코드 존재 확인</div>
+    </div>
+
+    <div class="cards cols-6" style="grid-template-columns:repeat(3,1fr);">
+
+      <!-- WEB_BROWSER_TOOL -->
+      <div class="card">
+        <div class="card-name">WEB_BROWSER_TOOL</div>
+        <div class="card-en">Actual browser control (Playwright/CDP), not web_fetch.</div>
+        <div class="card-ko">
+          <strong>실제 브라우저 자동화 툴 (Playwright/Chrome DevTools Protocol).</strong><br>
+          현재 <code>WebFetch</code>는 단순 HTTP 요청이지만, 이 툴은 실제 브라우저를 구동하여 JavaScript 렌더링, 클릭, 폼 입력, 스크린샷 등을 수행합니다.<br><br>
+          이미 Chrome 익스텐션 베타(<code>--chrome</code>)가 존재하지만, 이는 내장 브라우저 툴로 Claude Code 단독 실행 시에도 브라우저 자동화가 가능해집니다.
+        </div>
+        <div class="card-tags">
+          <span class="tag">Playwright</span>
+          <span class="tag">CDP</span>
+          <span class="tag">browser automation</span>
+          <span class="tag">web scraping</span>
+        </div>
+      </div>
+
+      <!-- WORKFLOW_SCRIPTS -->
+      <div class="card">
+        <div class="card-name">WORKFLOW_SCRIPTS</div>
+        <div class="card-en">Pre-defined multi-step automation scripts the agent can invoke as a unit.</div>
+        <div class="card-ko">
+          <strong>에이전트가 단위로 호출할 수 있는 사전 정의 멀티스텝 자동화 스크립트.</strong><br>
+          현재 Skills(슬래시 커맨드)보다 더 구조화된 워크플로우 레이어. "PR 리뷰 → 코드 수정 → 테스트 실행 → 커밋"과 같은 복합 작업을 하나의 워크플로우 단위로 묶어 재사용합니다.<br><br>
+          <em>CI/CD 파이프라인을 Claude가 직접 정의·실행하는 방향으로 발전할 가능성.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">workflow</span>
+          <span class="tag">multi-step</span>
+          <span class="tag">automation</span>
+          <span class="tag">reusable</span>
+        </div>
+      </div>
+
+      <!-- PROACTIVE -->
+      <div class="card">
+        <div class="card-name">PROACTIVE</div>
+        <div class="card-en">Agents can sleep, wait, and self-resume without user prompts.</div>
+        <div class="card-ko">
+          <strong>에이전트가 사용자 입력 없이 sleep → wait → 자기 재개 가능.</strong><br>
+          현재 Claude는 사용자 입력을 기다려야 하지만, PROACTIVE 모드에서는 에이전트 스스로 "N분 후 다시 시도", "파일이 변경되면 재개" 같은 조건부 대기 후 자율 재개가 가능합니다.<br><br>
+          <code>CwdChanged</code>, <code>FileChanged</code> 훅(v2.1.83)과 연계하면 파일 변경 감지 → 자동 분석 루프 구현 가능.
+        </div>
+        <div class="card-tags">
+          <span class="tag">autonomous</span>
+          <span class="tag">self-resume</span>
+          <span class="tag">sleep/wait</span>
+          <span class="tag">event-driven</span>
+        </div>
+      </div>
+
+      <!-- SSH_REMOTE + BRIDGE -->
+      <div class="card">
+        <div class="card-name">SSH_REMOTE + BRIDGE</div>
+        <div class="card-en">SSH remote sessions and a cc:// URI protocol for direct agent connects.</div>
+        <div class="card-ko">
+          <strong>SSH 원격 세션 + <code>cc://</code> URI 프로토콜로 직접 에이전트 연결.</strong><br>
+          원격 서버에 SSH로 접속한 상태에서도 Claude Code 에이전트를 직접 구동·연결할 수 있습니다. <code>cc://</code>는 Claude Code 전용 딥링크 URI 스킴으로, 에이전트 간 직접 통신 채널을 여는 데 사용됩니다.<br><br>
+          원격 개발 환경(cloud dev boxes, Codespaces)에서 Claude를 완전히 통합하는 인프라.
+        </div>
+        <div class="card-tags">
+          <span class="tag">SSH</span>
+          <span class="tag">cc:// URI</span>
+          <span class="tag">remote session</span>
+          <span class="tag">deep link</span>
+        </div>
+      </div>
+
+      <!-- MONITOR_TOOL -->
+      <div class="card">
+        <div class="card-name">MONITOR_TOOL</div>
+        <div class="card-en">Watch an MCP resource and trigger actions when its state changes.</div>
+        <div class="card-ko">
+          <strong>MCP 리소스를 감시하다 상태 변화 시 액션을 트리거.</strong><br>
+          데이터베이스 쿼리 결과, API 엔드포인트, 파일 상태 등 MCP 리소스를 주기적으로 폴링·감시하고, 변화가 감지되면 자동으로 Claude가 지정된 작업을 수행합니다.<br><br>
+          <em>예: "에러 로그가 증가하면 → 자동 분석 + Slack 알림 → 코드 수정 제안"</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">MCP resource</span>
+          <span class="tag">polling</span>
+          <span class="tag">state watch</span>
+          <span class="tag">reactive</span>
+        </div>
+      </div>
+
+      <!-- ULTRAPLAN -->
+      <div class="card">
+        <div class="card-name">ULTRAPLAN</div>
+        <div class="card-en">Enhanced planning pass, likely with plan verification built in.</div>
+        <div class="card-ko">
+          <strong>원격 Opus에 계획을 오프로드하는 강화 계획 패스.</strong><br>
+          소스에서 확인된 실제 메커니즘:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li>복잡한 계획 태스크를 <strong>원격 Cloud Container Runtime(CCR)</strong>의 Opus 인스턴스에 전달</li>
+            <li>최대 <strong>30분간</strong> 심층 계획 수립</li>
+            <li>사용자가 <strong>브라우저·폰</strong>에서 계획 검토 후 승인</li>
+            <li>승인 시 <code>__ULTRAPLAN_TELEPORT_LOCAL__</code> 센티넬 값으로 결과를 로컬 터미널로 반환</li>
+          </ul>
+          <em style="font-size:0.68rem;">이미지 설명("plan verification built in")보다 훨씬 구체적인 원격 오프로드 아키텍처 확인됨.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">remote CCR</span>
+          <span class="tag">Opus offload</span>
+          <span class="tag">30min planning</span>
+          <span class="tag">teleport sentinel</span>
+          <span class="tag">mobile approval</span>
+        </div>
+      </div>
+
+    </div><!-- /cards inflight -->
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3: INFRASTRUCTURE
+  ══════════════════════════════════════ -->
+  <section class="section infra">
+    <div class="section-label">
+      <div class="section-dot"></div>
+      <div class="section-title">Infrastructure</div>
+      <div class="section-rule"></div>
+      <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">내부 기반 기술 강화 · 사용자 직접 노출은 적음</div>
+    </div>
+
+    <div class="cards cols-4">
+
+      <!-- CONTEXT_COLLAPSE -->
+      <div class="card">
+        <div class="card-name">CONTEXT_COLLAPSE</div>
+        <div class="card-en">Three compaction strategies: reactive, micro, and context inspection tool.</div>
+        <div class="card-ko">
+          <strong>3가지 컨텍스트 압축 전략 + 컨텍스트 검사 툴.</strong><br>
+          현재 <code>/compact</code>는 단일 전략이지만, CONTEXT_COLLAPSE는 세 가지 방식을 제공합니다:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>Reactive</strong>: 95% 도달 시 자동 압축 (현재 auto-compact)</li>
+            <li><strong>Micro</strong>: 개별 툴 결과를 즉시 소형화</li>
+            <li><strong>Context Inspection</strong>: 컨텍스트 내용을 실시간 시각화·검사</li>
+          </ul>
+          <em style="font-size:0.68rem;">이미 일부는 <code>/context</code> 명령에 반영됨.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">compaction</span>
+          <span class="tag">reactive</span>
+          <span class="tag">micro</span>
+          <span class="tag">inspection</span>
+        </div>
+      </div>
+
+      <!-- HISTORY_SNIP -->
+      <div class="card">
+        <div class="card-name">HISTORY_SNIP</div>
+        <div class="card-en">Surgically remove specific parts of conversation history without a full compact.</div>
+        <div class="card-ko">
+          <strong>전체 압축 없이 대화 히스토리 특정 부분을 정밀 제거.</strong><br>
+          현재는 <code>/compact</code>로 전체를 압축하거나 <code>/clear</code>로 초기화하는 것만 가능합니다. HISTORY_SNIP은 "이 특정 파일 읽기 결과만 제거", "10번~15번 턴만 삭제"처럼 외과적 편집을 지원합니다.<br><br>
+          컨텍스트 오염 없이 정확한 히스토리 관리가 가능해집니다.
+        </div>
+        <div class="card-tags">
+          <span class="tag">history edit</span>
+          <span class="tag">surgical removal</span>
+          <span class="tag">context management</span>
+          <span class="tag">no full compact</span>
+        </div>
+      </div>
+
+      <!-- AGENT_MEMORY_SNAPSHOT -->
+      <div class="card">
+        <div class="card-name">AGENT_MEMORY_SNAPSHOT</div>
+        <div class="card-en">Persist agent memory state across sessions without external storage.</div>
+        <div class="card-ko">
+          <strong>외부 스토리지 없이 에이전트 메모리 상태를 세션 간 지속.</strong><br>
+          현재 에이전트는 세션이 끝나면 상태를 잃습니다. AGENT_MEMORY_SNAPSHOT은 에이전트의 작업 상태·컨텍스트·진행도를 스냅샷으로 저장하고, 다음 세션에서 그대로 재개합니다.<br><br>
+          CLAUDE.md의 자동 메모리(<code>~/.claude/projects/</code>)와 다르게 에이전트 특화 상태를 보존합니다.
+        </div>
+        <div class="card-tags">
+          <span class="tag">memory persistence</span>
+          <span class="tag">snapshot</span>
+          <span class="tag">cross-session</span>
+          <span class="tag">stateful agent</span>
+        </div>
+      </div>
+
+      <!-- TRANSCRIPT_CLASSIFIER -->
+      <div class="card">
+        <div class="card-name">TRANSCRIPT_CLASSIFIER</div>
+        <div class="card-en">Auto-infer permission mode by reading what the session has been doing.</div>
+        <div class="card-ko">
+          <strong>세션에서 무슨 작업을 해왔는지 읽어 권한 모드를 자동 추론.</strong><br>
+          사용자가 직접 권한 모드를 설정하지 않아도, 대화 맥락을 분석해 적절한 권한 수준을 자동 제안·적용합니다.<br><br>
+          예: "테스트 작성 중" → <code>acceptEdits</code> 자동 제안 / "보안 감사 중" → <code>plan</code> 모드 제안. 이미 출시된 auto mode classifier의 확장 버전으로 보임.
+        </div>
+        <div class="card-tags">
+          <span class="tag">auto permission</span>
+          <span class="tag">classifier</span>
+          <span class="tag">context-aware</span>
+          <span class="tag">adaptive mode</span>
+        </div>
+      </div>
+
+    </div><!-- /cards infra -->
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4: DEV TOOLING
+  ══════════════════════════════════════ -->
+  <section class="section dev">
+    <div class="section-label">
+      <div class="section-dot"></div>
+      <div class="section-title">Dev Tooling</div>
+      <div class="section-rule"></div>
+      <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">개발자 생산성 도구 · 워크플로우 통합</div>
+    </div>
+
+    <div class="cards" style="grid-template-columns:repeat(3,1fr);">
+
+      <!-- TERMINAL_PANEL -->
+      <div class="card">
+        <div class="card-name">TERMINAL_PANEL</div>
+        <div class="card-en">Read the rendered terminal output buffer, not just bash stdout.</div>
+        <div class="card-ko">
+          <strong>bash stdout뿐 아니라 렌더링된 터미널 출력 버퍼 전체를 읽음.</strong><br>
+          현재 Claude는 명령의 stdout/stderr만 받습니다. TERMINAL_PANEL은 터미널 화면 전체(스크롤백 포함, ANSI 색상 코드, 커서 위치 등)를 읽을 수 있게 됩니다.<br><br>
+          TUI 애플리케이션, 대화형 프로그램(<code>vim</code>, <code>htop</code>, <code>python REPL</code>)의 상태를 Claude가 직접 파악 가능. computer-use 계열 기능과 연계 예상.
+        </div>
+        <div class="card-tags">
+          <span class="tag">terminal buffer</span>
+          <span class="tag">TUI support</span>
+          <span class="tag">ANSI</span>
+          <span class="tag">screen read</span>
+        </div>
+      </div>
+
+      <!-- CHICAGO_MCP -->
+      <div class="card">
+        <div class="card-name">CHICAGO_MCP</div>
+        <div class="card-en">macOS-only system bridge (Spotlight, Accessibility, Notifications) via MCP.</div>
+        <div class="card-ko">
+          <strong>macOS 전용 시스템 브리지 — MCP를 통해 Spotlight·접근성·알림 연동.</strong><br>
+          macOS 시스템 API를 MCP 서버로 래핑하여 Claude가 직접 접근 가능하게 합니다:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>Spotlight</strong>: 시스템 파일 검색</li>
+            <li><strong>Accessibility API</strong>: 화면의 UI 요소 읽기·제어</li>
+            <li><strong>Notifications</strong>: macOS 알림 센터 연동</li>
+          </ul>
+          <em style="font-size:0.68rem;">코드명 "Chicago"는 아마 내부 프로젝트명. Windows 버전은 별도 계획 가능성.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">macOS only</span>
+          <span class="tag">Spotlight</span>
+          <span class="tag">Accessibility</span>
+          <span class="tag">MCP bridge</span>
+        </div>
+      </div>
+
+      <!-- SKILL_SEARCH + MCP_SKILLS -->
+      <div class="card">
+        <div class="card-name">SKILL_SEARCH + MCP_SKILLS</div>
+        <div class="card-en">Local skill index + MCP-hosted skill libraries consumable like MCP servers.</div>
+        <div class="card-ko">
+          <strong>로컬 스킬 인덱스 + MCP로 호스팅된 스킬 라이브러리.</strong><br>
+          두 가지 기능의 조합:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>SKILL_SEARCH</strong>: 설치된 스킬을 의미 기반으로 검색·발견</li>
+            <li><strong>MCP_SKILLS</strong>: 스킬을 MCP 서버처럼 원격 호스팅·공유 가능</li>
+          </ul>
+          팀 단위로 커스텀 스킬을 MCP 서버로 배포하고, 다른 개발자가 <code>/plugin install</code>처럼 설치하는 생태계 구축. 현재 <code>/skills</code> 명령의 대대적 확장.
+        </div>
+        <div class="card-tags">
+          <span class="tag">skill index</span>
+          <span class="tag">MCP hosting</span>
+          <span class="tag">semantic search</span>
+          <span class="tag">skill sharing</span>
+        </div>
+      </div>
+
+      <!-- UPLOAD_USER_SETTINGS -->
+      <div class="card">
+        <div class="card-name">UPLOAD_USER_SETTINGS</div>
+        <div class="card-en">Sync local Claude Code config to remote on startup.</div>
+        <div class="card-ko">
+          <strong>시작 시 로컬 Claude Code 설정을 원격으로 동기화.</strong><br>
+          <code>~/.claude/settings.json</code>, <code>~/.claude/CLAUDE.md</code> 등 개인 설정을 Anthropic 클라우드 또는 팀 서버에 자동 업로드·동기화합니다.<br><br>
+          새 장비 셋업, 팀 표준 설정 배포, Claude Code on the Web과의 설정 동기화 시나리오에 활용 예상. 현재 Remote Control 기능의 설정 측면 확장.
+        </div>
+        <div class="card-tags">
+          <span class="tag">settings sync</span>
+          <span class="tag">cloud backup</span>
+          <span class="tag">remote config</span>
+          <span class="tag">startup sync</span>
+        </div>
+      </div>
+
+      <!-- COMMIT_ATTRIBUTION -->
+      <div class="card">
+        <div class="card-name">COMMIT_ATTRIBUTION</div>
+        <div class="card-en">Tag git commits with metadata identifying the Claude session that made them.</div>
+        <div class="card-ko">
+          <strong>git 커밋에 Claude 세션 식별 메타데이터를 태그.</strong><br>
+          Claude가 작성한 코드가 커밋될 때 어떤 Claude 세션·모델·설정에서 생성됐는지 git trailers 또는 커밋 메시지에 자동 기록합니다.<br><br>
+          예: <code>Claude-Session: sess_abc123</code>, <code>Claude-Model: claude-sonnet-4-6</code><br>
+          코드 감사(audit), AI 기여도 추적, 자동화된 코드 리뷰 시 출처 식별에 활용.
+        </div>
+        <div class="card-tags">
+          <span class="tag">git metadata</span>
+          <span class="tag">attribution</span>
+          <span class="tag">audit trail</span>
+          <span class="tag">git trailers</span>
+        </div>
+      </div>
+
+      <!-- TEMPLATES -->
+      <div class="card">
+        <div class="card-name">TEMPLATES</div>
+        <div class="card-en">Project scaffolding templates for /init — no tool wired yet.</div>
+        <div class="card-ko">
+          <strong><code>/init</code> 용 프로젝트 스캐폴딩 템플릿 — 아직 툴 연결 없음.</strong><br>
+          현재 <code>/init</code>은 CLAUDE.md를 자동 생성하는 수준이지만, TEMPLATES는 프로젝트 유형별 전체 스캐폴딩(파일 구조, 설정, CLAUDE.md, 스킬 세트)을 제공합니다.<br><br>
+          예: "React TypeScript 프로젝트", "Python FastAPI 백엔드", "Next.js + Prisma" 템플릿으로 즉시 최적화된 환경 구성. <em>소스에 플래그만 존재, 미연결.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">scaffolding</span>
+          <span class="tag">/init</span>
+          <span class="tag">project template</span>
+          <span class="tag">⚠ unwired</span>
+        </div>
+      </div>
+
+    </div><!-- /cards dev -->
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5: UNKNOWN / INTERNAL
+  ══════════════════════════════════════ -->
+  <section class="section unk">
+    <div class="section-label">
+      <div class="section-dot"></div>
+      <div class="section-title">Unknown / Internal</div>
+      <div class="section-rule"></div>
+      <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">플래그 존재 · 미연결 상태 · Anthropic 내부 전용</div>
+    </div>
+
+    <div class="cards cols-3">
+
+      <!-- BUDDY -->
+      <div class="card">
+        <div class="card-name">BUDDY</div>
+        <div class="card-en">Flags compiled into the bundle. No tool or command wired to them yet.</div>
+        <div class="card-ko">
+          <strong>가상 반려 생물 동반 시스템.</strong> 이미지 설명보다 훨씬 구체적인 구현 존재 확인.<br>
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>18종</strong>: duck, dragon, axolotl, capybara, mushroom, ghost 등</li>
+            <li><strong>희귀도</strong>: Common → Legendary(1% 확률) + shiny 변형</li>
+            <li><strong>5가지 스탯</strong>: DEBUGGING / PATIENCE / CHAOS / WISDOM / SNARK</li>
+            <li><strong>결정론적 생성</strong>: <code>userId</code> 해시 기반 → 같은 유저는 항상 같은 종 부화</li>
+            <li>입력창 옆 말풍선에 상주, 이름·성격은 Claude가 최초 부화 시 작성</li>
+            <li>코스메틱 모자 아이템 존재</li>
+          </ul>
+          <em style="font-size:0.68rem;">내부 주석: 4월 1~7일 티저, 2026년 5월 정식 출시 목표 (미확인). v2.1.89 changelog에 "/buddy" 만우절 기능으로 이미 노출됨.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">18 species</span>
+          <span class="tag">rarity tiers</span>
+          <span class="tag">5 stats</span>
+          <span class="tag">userId hash</span>
+          <span class="tag">May 2026 target</span>
+        </div>
+      </div>
+
+      <!-- LODESTONE · TORCH -->
+      <div class="card">
+        <div class="card-name">LODESTONE · TORCH</div>
+        <div class="card-en">Flags compiled into the bundle. No tool or command wired to them yet.</div>
+        <div class="card-ko">
+          <strong>번들에 컴파일된 플래그 · 툴·명령에 미연결 상태.</strong><br>
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>LODESTONE</strong>: 나침반(방향 제시)의 의미. 코드 네비게이션 또는 의존성 그래프 추적 기능 추정</li>
+            <li><strong>TORCH</strong>: 탐색 도구의 의미. 코드베이스 조명·딥서치 관련 가능성</li>
+          </ul>
+          <em style="font-size:0.68rem;">소스에 플래그만 존재, 구현 로직 미확인.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">⚠ unwired</span>
+          <span class="tag">flags only</span>
+          <span class="tag">codenames</span>
+        </div>
+      </div>
+
+      <!-- TOKEN_BUDGET -->
+      <div class="card">
+        <div class="card-name">TOKEN_BUDGET</div>
+        <div class="card-en">Per-session or per-agent token spend cap. Minimal wiring visible.</div>
+        <div class="card-ko">
+          <strong>세션 단위 또는 에이전트 단위 토큰 소비 상한 설정.</strong><br>
+          현재 <code>--max-budget-usd</code> 플래그는 비용 기준 상한을 설정하지만, TOKEN_BUDGET은 토큰 수 기준으로 직접 제한합니다.<br><br>
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li>세션 전체 토큰 예산 설정</li>
+            <li>에이전트별 개별 토큰 예산 할당</li>
+            <li>예산 소진 시 자동 중단 또는 더 저렴한 모델로 전환</li>
+          </ul>
+          <em style="font-size:0.68rem;">소스에 최소한의 연결만 존재. 아직 초기 단계.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">token budget</span>
+          <span class="tag">spend cap</span>
+          <span class="tag">per-agent</span>
+          <span class="tag">⚠ minimal wiring</span>
+        </div>
+      </div>
+
+      <!-- Ant-only tools -->
+      <div class="card">
+        <div class="card-name">Ant-only tools</div>
+        <div class="card-en">REPLTool, TungstenTool, ConfigTool — only load for Anthropic employees.</div>
+        <div class="card-ko">
+          <strong>Anthropic 직원 전용으로만 로드되는 내부 툴.</strong><br>
+          세 가지 내부 전용 툴이 소스에 존재합니다:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>REPLTool</strong>: 인터랙티브 REPL 환경 — 코드 평가·실험용 내부 샌드박스</li>
+            <li><strong>TungstenTool</strong>: 텅스텐(고강도 금속)이라는 코드명 — 내부 인프라 또는 모델 접근 관련 추정</li>
+            <li><strong>ConfigTool</strong>: Anthropic 내부 설정 관리 툴 — 일반 사용자 <code>/config</code>와 다른 내부 레벨 설정</li>
+          </ul>
+          <em style="font-size:0.68rem;">직원 인증 시에만 활성화. 외부 공개 불가.</em>
+        </div>
+        <div class="card-tags">
+          <span class="tag">🔒 internal only</span>
+          <span class="tag">REPLTool</span>
+          <span class="tag">TungstenTool</span>
+          <span class="tag">ConfigTool</span>
+        </div>
+      </div>
+
+    </div><!-- /cards unk -->
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6: LEAK-ONLY DISCOVERIES (이미지에 없음)
+  ══════════════════════════════════════ -->
+  <section class="section" style="--accent:#6d28d9;">
+    <div class="section-label">
+      <div class="section-dot" style="background:#6d28d9;"></div>
+      <div class="section-title" style="color:#6d28d9;">이미지에 없는 유출 추가 발견</div>
+      <div class="section-rule"></div>
+      <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">src.zip 소스 분석에서만 확인된 항목 · 이미지 시각화에서 누락됨</div>
+    </div>
+
+    <div class="cards" style="grid-template-columns:repeat(2,1fr);background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden;">
+
+      <!-- UNDERCOVER MODE -->
+      <div class="card" style="background:#fdf4ff;border-left:3px solid #6d28d9 !important;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#6d28d9;"></div>
+        <div class="card-name" style="color:#6d28d9;">UNDERCOVER MODE <span style="background:#ef4444;color:#fff;font-size:0.55rem;padding:1px 5px;border-radius:2px;margin-left:4px;font-weight:700;">논란</span></div>
+        <div class="card-en">USER_TYPE === 'ant' flag: when Anthropic employees work in public repos, system auto-enters undercover mode.</div>
+        <div class="card-ko">
+          <strong>Anthropic 직원이 공개 레포에서 작업 시 자동으로 "잠복 모드" 진입.</strong><br>
+          소스에서 확인된 구체적 동작:
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><code>USER_TYPE === 'ant'</code> 플래그 감지 시 자동 활성화</li>
+            <li>시스템 프롬프트 주입: <em>"신분을 들키지 말 것"</em>, <em>"절대 AI라고 언급하지 말 것"</em></li>
+            <li>git 커밋의 <strong>Co-Authored-By</strong> 라인 자동 제거 (AI 기여 메타데이터 삭제)</li>
+            <li>내부 코드명을 응답에서 숨김</li>
+            <li>사용자 인터페이스에 <strong>강제 해제 스위치 없음</strong></li>
+          </ul>
+          <strong style="color:#c0392b;font-size:0.72rem;">⚠ 윤리적 논란:</strong> <span style="font-size:0.71rem;">Co-Authored-By 삭제는 다른 개발자들이 AI 기여를 추적하는 신호를 제거함. "AI임을 밝히지 말라"는 지시는 공개 협업 환경에서의 공개 의무와 충돌 가능성.</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+          <span style="background:#f3e8ff;color:#6d28d9;border:1px solid #d8b4fe;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">USER_TYPE=ant</span>
+          <span style="background:#f3e8ff;color:#6d28d9;border:1px solid #d8b4fe;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">Co-Authored-By 삭제</span>
+          <span style="background:#fef2f2;color:#c0392b;border:1px solid #fca5a5;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">⚠ 윤리 논란</span>
+          <span style="background:#f3e8ff;color:#6d28d9;border:1px solid #d8b4fe;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">no force-off</span>
+        </div>
+      </div>
+
+      <!-- INTERNAL MODEL CODENAMES + ARCHITECTURE -->
+      <div class="card" style="background:#f0f9ff;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#0369a1;"></div>
+        <div class="card-name" style="color:#0369a1;">내부 모델 코드명 + 아키텍처</div>
+        <div class="card-en">Internal model codenames, architecture scale, and silent behaviors found in leaked source.</div>
+        <div class="card-ko">
+          <strong>소스에서 확인된 내부 코드명 및 미문서화 동작:</strong>
+          <ul style="margin:6px 0 0 14px;font-size:0.71rem;line-height:1.7;">
+            <li><strong>Fennec</strong> = Opus 4.6 내부 코드명</li>
+            <li><strong>Capybara</strong> = Claude 4.6 변형 모델</li>
+            <li><strong>Numbat</strong> = 현재 테스트 중인 모델</li>
+            <li>전체 규모: 1,900개 파일, 512,000줄, main.tsx 단일 파일 785KB</li>
+            <li><strong>44개</strong> 컴파일 타임 피처 플래그 (일부 자료: 108개 게이팅 모듈)</li>
+            <li>컨텍스트 자동 압축 임계: <strong>~167,000 토큰</strong>에서 컨텍스트 파괴</li>
+            <li>파일 읽기 상한: <strong>2,000줄</strong> 초과 시 무음 할루시네이션 발생</li>
+            <li>API 서버 오류 시 Opus → Sonnet <strong>무음 다운그레이드</strong></li>
+            <li>런타임: Node 아닌 <strong>Bun</strong> · UI: React + Ink (CLI용 React)</li>
+            <li>CHICAGO_MCP = Computer Use의 내부 코드명 (<code>@ant/computer-use-mcp</code>)</li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+          <span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">Fennec=Opus4.6</span>
+          <span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">Capybara</span>
+          <span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">Bun runtime</span>
+          <span style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">44 feature flags</span>
+          <span style="background:#fef2f2;color:#c0392b;border:1px solid #fca5a5;font-family:var(--font-mono);font-size:0.6rem;padding:1px 6px;border-radius:2px;font-weight:600;">silent downgrade</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <section style="background:#fff;border:1px solid var(--rule);border-radius:4px;padding:22px 26px;margin-top:8px;">
+    <div style="font-family:var(--font-mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:14px;">📚 강의 활용 관점 분석 — brewnet 프로젝트 연계 포인트</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+
+      <div>
+        <div style="font-weight:700;font-size:0.75rem;color:var(--major-accent);margin-bottom:6px;">🔴 단기 주목 기능</div>
+        <div style="font-size:0.72rem;color:var(--ink2);line-height:1.7;">
+          <strong>COORDINATOR_MODE</strong>는 brewnet 빌드 파이프라인에 직접 적용 가능 — 빌드/테스트/배포 워커 분리 시나리오로 강의 예시 구성 가능.<br><br>
+          <strong>COMMIT_ATTRIBUTION</strong>은 AI 협업 코드 감사 워크플로우 챕터에 포함할 수 있는 실용적 기능.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:700;font-size:0.75rem;color:var(--inflight-accent);margin-bottom:6px;">🟡 중기 모니터링 기능</div>
+        <div style="font-size:0.72rem;color:var(--ink2);line-height:1.7;">
+          <strong>WEB_BROWSER_TOOL</strong>이 출시되면 brewnet E2E 테스트 자동화 챕터 추가 예정.<br><br>
+          <strong>SKILL_SEARCH + MCP_SKILLS</strong>는 현재 Agent Skills 챕터(강의 레벨 4-5)의 연장선으로, 팀 스킬 공유 생태계 실습으로 발전 가능.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:700;font-size:0.75rem;color:var(--infra-accent);margin-bottom:6px;">🔵 아키텍처 이해용</div>
+        <div style="font-size:0.72rem;color:var(--ink2);line-height:1.7;">
+          <strong>KAIROS + AGENT_TRIGGERS</strong>는 "Claude Code를 자율 시스템으로 운용"이라는 마지막 레벨 강의 주제와 직결.<br><br>
+          <strong>CONTEXT_COLLAPSE</strong>의 세 가지 전략은 컨텍스트 관리 챕터에서 현재 auto-compact와 함께 비교 설명 가능.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div>
+      <strong>유출 경위:</strong> 2026-03-31 · npm v2.1.88 소스맵(.map) 미제외 → Chaofan Shou 발견 → src.zip R2 버킷 직접 다운로드 → Anthropic 공식 확인 · 이 이미지는 커뮤니티 분석 시각화
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <a href="https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md" target="_blank">GitHub CHANGELOG</a>
+      <a href="https://code.claude.com/docs/en/overview" target="_blank">공식 Docs</a>
+      <a href="https://wavespeed.ai/blog/posts/claude-code-leaked-source-hidden-features/" target="_blank">WaveSpeed 분석</a>
+      <a href="https://dev.to/varshithvhegde/the-great-claude-code-leak-of-2026-accident-incompetence-or-the-best-pr-stunt-in-ai-history-3igm" target="_blank">DEV.to 분석</a>
+      <a href="https://venturebeat.com/technology/claude-codes-source-code-appears-to-have-leaked-heres-what-we-know" target="_blank">VentureBeat</a>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

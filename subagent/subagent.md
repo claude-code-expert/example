@@ -1,6 +1,7 @@
 ## How Subagents Work / 서브에이전트 동작 원리
 
 > 📘 [github.com/claude-code-expert](https://github.com/claude-code-expert) — 클로드 코드 마스터 (한빛미디어 서적 공식 리포지토리) 
+
 > ☕ [www.brewnet.dev](https://www.brewnet.dev) — 셀프 호스팅 홈서버 자동 구축 오픈소스
 
 

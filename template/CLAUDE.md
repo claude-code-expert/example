@@ -54,5 +54,8 @@
 - `migrations/` — never edit manually; use drizzle-kit only
 
 @.claude/rules/code-style.md
+
 @.claude/rules/testing.md
+
 @.claude/rules/git-workflow.md
+

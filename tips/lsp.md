@@ -17,6 +17,12 @@ LSP(Language Server Protocol)는 편집기(클라이언트)와 언어 서버 사
 
 LSP 등장 이전에는 10개 편집기 × 20개 언어 = 200개 연동을 각각 만들어야 했다. LSP 덕분에 편집기와 언어 서버 모두 프로토콜만 구현하면 되므로 10 + 20 = 30개로 전부 호환된다. VS Code에서 함수 위에 마우스를 올렸을 때 타입 정보가 뜨거나, "정의로 이동"이 동작하거나, 빨간 밑줄로 에러를 표시해주는 기능이 모두 LSP를 통해 언어 서버와 통신한 결과다.
 
+#### LSP 유무에 따른 토큰 소비 비교
+
+![LSP 토큰 비교](../images/lsp.png)
+
+LSP 없이 텍스트 검색(Grep)으로 심볼을 탐색하면 클래스명, 변수, 주석, CSS까지 모두 매치되어 수천 토큰이 소모된다. LSP를 사용하면 언어 서버의 AST에서 정확한 위치만 반환하므로 토큰 소비가 대폭 줄어든다.
+
 #### 이런 상황에서 효과적이다
 
 - **리팩토링** — `findReferences`로 실제 참조만 정확하게 파악하여 누락 없이 수정할 수 있다
@@ -37,13 +43,15 @@ Claude Code는 v2.0.74(2025년 12월)에서 빌트인 LSP 도구를 추가했다
 다만 v2.0.69~v2.0.x 사이에 레이스 컨디션 버그가 있었으므로, 안정적으로 사용하려면 v2.1.0 이상을 권장한다.
 
 ```bash
-# 언어 서버 설치 (TypeScript 기준)
+# 1. 언어 서버 바이너리 설치 (전제조건 — 플러그인이 통신할 언어 서버가 $PATH에 있어야 한다)
 npm install -g @vtsls/language-server typescript
 
-# Claude Code 안에서 플러그인 마켓플레이스 등록 후 설치
-/plugin marketplace add https://github.com/Piebald-AI/claude-code-lsps
+# 2. Claude Code 안에서 플러그인 마켓플레이스 등록 후 설치
+/plugin marketplace add Piebald-AI/claude-code-lsps
 /plugin install vtsls@claude-code-lsps
 ```
+
+> **주의**: `npm install -g`는 언어 서버 바이너리를 시스템에 설치하는 **전제조건**이다. 이것만으로는 Claude Code와 연결되지 않으며, 반드시 `/plugin install`까지 완료해야 LSP 기능이 동작한다.
 
 설치만 하면 별도 설정 없이 바로 동작한다. `goToDefinition`, `findReferences`, `documentSymbol`, `hover`, `getDiagnostics` 등 9개 오퍼레이션을 제공하며, 커뮤니티 마켓플레이스를 통해 TypeScript, Python, Go, Rust, Java, C/C++ 등 20개 이상의 언어를 지원한다.
 
@@ -54,10 +62,30 @@ npm install -g @vtsls/language-server typescript
 **cclsp** — 가벼운 LSP 브릿지. 대화형 위저드를 제공한다.
 
 ```bash
+# 대화형 설치 (권장) — 프롬프트에서 언어를 선택하면 프로젝트의 .claude/ 하위에 cclsp.json을 생성한다
 npx cclsp@latest setup
-# 또는 수동 설정
+
+# 또는 수동 설정 — MCP 서버로 등록
 claude mcp add cclsp -- npx cclsp@latest
 ```
+
+`npx cclsp@latest setup`으로 설치하면 대화형 프롬프트에서 사용할 언어를 선택할 수 있으며, 프로젝트의 `.claude/cclsp.json`에 설정 파일이 생성된다. `claude mcp add`로 설치한 경우에는 사용자 MCP 설정(`~/.claude/mcp.json`)에 현재 프로젝트 기준으로 cclsp MCP 서버가 등록된다.
+
+cclsp.json 설정 예시 (TypeScript/JavaScript 기준):
+
+```json
+{
+  "servers": [
+    {
+      "extensions": ["js", "ts", "jsx", "tsx"],
+      "command": ["npx", "--", "typescript-language-server", "--stdio"],
+      "rootDir": "."
+    }
+  ]
+}
+```
+
+> 언어별 설정 샘플은 [cclsp GitHub 리포지토리](https://github.com/nicobailey/cclsp)에서 확인할 수 있다.
 
 **Serena** — LSP 기반이지만 심볼 단위 편집, 세션 메모리, 프로젝트 온보딩까지 포함하는 종합 코딩 에이전트 툴킷이다. 30개 이상의 언어를 지원하며, JetBrains IDE 플러그인과도 연동된다. Claude Code에서 사용할 때는 빌트인 LSP와 도구가 중복되므로 `--context claude-code` 옵션을 반드시 지정해야 한다.
 

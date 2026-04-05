@@ -2,8 +2,6 @@
 책에 다 실어내지 못한 내용중 Docker 관련 내용은 다음과 같습니다.
 
 
-Chapter 12까지 AI 챗봇의 백엔드와 프런트엔드를 완성했다. 이번 장에서는 Docker로 애플리케이션을 컨테이너화하고 배포 환경을 구성한다. 개발 환경에서 잘 동작하는 코드가 운영 환경에서도 동일하게 동작하도록 만드는 것이 목표다.
-
 Part 2의 TODO 앱은 Vercel을 통해 간편하게 배포했다. 정적 사이트와 서버리스 함수로 구성된 간단한 구조에는 Vercel이 적합했다. 하지만 AI 챗봇은 사정이 다르다. Bedrock API 호출, SSE 스트리밍, 환경 변수 기반의 모델 전환 등 백엔드의 역할이 크고, 운영 환경에서의 리소스 관리가 중요하다. Docker + AWS ECS 조합을 선택한 이유는 컨테이너 기반 배포가 이런 요구사항에 더 적합하기 때문이다.
 
 ---
@@ -191,7 +189,7 @@ WORKDIR /app
 
 # 프로덕션 의존성만 설치
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # 빌드 결과물만 복사
 COPY --from=builder /app/dist ./dist
@@ -214,7 +212,7 @@ CMD ["node", "dist/index.js"]
 | `COPY . .` | 나머지 소스 코드 복사 |
 | `RUN npm run build` | TypeScript 컴파일 |
 | `FROM node:20-alpine AS runner` | 실행용 경량 이미지 시작 |
-| `npm ci --only=production` | devDependencies 제외하고 설치 |
+| `npm ci --omit=dev` | devDependencies 제외하고 설치 |
 | `COPY --from=builder /app/dist` | 빌드 스테이지의 결과물만 복사 |
 | `USER node` | root가 아닌 node 사용자로 실행 (보안) |
 
@@ -430,8 +428,6 @@ __tests__
 ```yaml
 # docker-compose.yml
 
-version: "3.8"
-
 services:
   backend:
     build:
@@ -502,8 +498,6 @@ router.get("/health", (req, res) => {
 
 ```yaml
 # docker-compose.dev.yml
-
-version: "3.8"
 
 services:
   backend:

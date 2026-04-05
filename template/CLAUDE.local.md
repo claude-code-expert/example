@@ -12,6 +12,6 @@
 - Prefer arrow functions and functional style
 
 ## Local Commands
-- `pnpm dev` — dev server
-- `pnpm test:watch` — test in watch mode
-- `pnpm prisma migrate dev` — run migrations locally
+- `npm run dev` — dev server
+- `npm run test -- --watch` — test in watch mode
+- `npx drizzle-kit push` — push schema changes locally

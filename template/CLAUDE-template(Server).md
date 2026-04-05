@@ -34,7 +34,7 @@ Routes → Controllers → Services → Repositories → Database
 ## Guardrails
 
 ### Prisma
-- NEVER edit files in `prisma/migrations/` manually — use drizzle-kit or prisma migrate only
+- NEVER edit files in `prisma/migrations/` manually — use prisma migrate only
 - ALWAYS run `pnpm prisma:generate` after any `schema.prisma` change
 - Multi-write operations MUST use `prisma.$transaction()`
 - NEVER expose raw Prisma errors to API responses

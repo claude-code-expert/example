@@ -9,6 +9,12 @@
 - Auth: [e.g. Clerk]
 - Other: [e.g. Tailwind CSS, Shadcn/ui, Vercel]
 
+## ⚙️ Meta Rules
+
+**On recurring issues**: Do not simply retry. Always read the relevant source code first, identify the root cause, then respond.
+
+**After session restart**: After `/compact` completes or a new session starts, always re-read this file first to restore the project context.
+
 ## Commands
 - `npm run dev` — dev server (port 3000)
 - `npm run test` — run test suite
@@ -26,7 +32,6 @@
 - Read source code before answering. No guessing on paths, configs, or behavior.
 - Never claim to have confirmed a fix without actually reading the relevant file.
 - When the same bug recurs, do a source-level deep dive — do not patch blindly.
-- After /compact, re-read CLAUDE.md before continuing work.
 
 ## Guardrails
 
@@ -53,9 +58,17 @@
 - `.env*` files — never create or edit; user manages all env vars
 - `migrations/` — never edit manually; use drizzle-kit only
 
+
 @.claude/rules/code-style.md
 
 @.claude/rules/testing.md
 
 @.claude/rules/git-workflow.md
 
+### Response Format After Task Completion
+
+After completing a task, always summarize the following in Korean:
+
+1. **What was changed**
+2. **Why it was done that way**
+3. **Any caveats or things to watch out for**   

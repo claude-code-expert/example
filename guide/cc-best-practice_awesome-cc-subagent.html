@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>shanraisshan vs VoltAgent</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0f12;
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    color: #e8e6de;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  .dl-btn {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: #4ade80;
+    color: #052e16;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 999;
+    letter-spacing: .02em;
+    transition: opacity .2s;
+  }
+  .dl-btn:hover { opacity: .85; }
+
+  /* ===== CARD ===== */
+  #capture {
+    width: 900px;
+    background: #111418;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid #1e2229;
+  }
+
+  /* TOP BANNER */
+  .banner {
+    background: linear-gradient(135deg, #0f1923 0%, #0d1f2d 50%, #0f1923 100%);
+    padding: 40px 48px 32px;
+    border-bottom: 1px solid #1e2229;
+    position: relative;
+    overflow: hidden;
+  }
+  .banner::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(59,107,171,.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .banner::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 40%;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(39,80,10,.14) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .banner-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #5a6a7e;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .banner-title {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #f0ede4;
+    margin-bottom: 10px;
+  }
+  .banner-title span.vs {
+    color: #3d4a5c;
+    font-weight: 400;
+    font-size: 20px;
+    margin: 0 10px;
+  }
+  .banner-sub {
+    font-size: 13px;
+    color: #5a6a7e;
+    margin-top: 6px;
+  }
+  .repo-pills {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+  .pill-a {
+    background: rgba(24,95,165,.18);
+    border: 1px solid rgba(53,138,221,.3);
+    color: #71b3ef;
+  }
+  .pill-b {
+    background: rgba(59,109,17,.18);
+    border: 1px solid rgba(99,153,34,.3);
+    color: #8fc55a;
+  }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .pill-a .pill-dot { background: #378ADD; }
+  .pill-b .pill-dot { background: #639922; }
+
+  /* REPO HEADERS */
+  .repo-headers {
+    display: grid;
+    grid-template-columns: 210px 1fr 1fr;
+    background: #0d0f12;
+    border-bottom: 1px solid #1e2229;
+  }
+  .rh-blank { border-right: 1px solid #1e2229; }
+  .rh-col {
+    padding: 20px 22px;
+    border-right: 1px solid #1e2229;
+  }
+  .rh-col:last-child { border-right: none; }
+  .rh-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .rh-name-a { color: #71b3ef; }
+  .rh-name-b { color: #8fc55a; }
+  .rh-repo { font-family: 'DM Mono', monospace; font-size: 11px; color: #3d4a5c; margin-bottom: 8px; }
+  .rh-star {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .rh-link {
+    font-family: 'DM Mono', monospace;
+    font-size: 10.5px;
+    margin-top: 7px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    letter-spacing: .01em;
+  }
+  .rh-link-a { background: rgba(24,95,165,.12); color: #4a8bbf; border: 1px solid rgba(53,138,221,.18); }
+  .rh-link-b { background: rgba(59,109,17,.12); color: #5a8a30; border: 1px solid rgba(99,153,34,.18); }
+  .rh-star-a { background: rgba(24,95,165,.15); color: #71b3ef; border: 1px solid rgba(53,138,221,.2); }
+  .rh-star-b { background: rgba(59,109,17,.15); color: #8fc55a; border: 1px solid rgba(99,153,34,.2); }
+
+  /* TABLE */
+  .section-head {
+    display: grid;
+    grid-template-columns: 210px 1fr 1fr;
+    background: #0a0c0f;
+    border-top: 1px solid #1e2229;
+    border-bottom: 1px solid #1e2229;
+  }
+  .sh-label {
+    grid-column: 1/-1;
+    padding: 7px 22px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #3d4a5c;
+    border-bottom: none;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 210px 1fr 1fr;
+    border-bottom: 1px solid #1a1d22;
+  }
+  .row:last-child { border-bottom: none; }
+  .cell {
+    padding: 11px 22px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    border-right: 1px solid #1a1d22;
+  }
+  .cell:last-child { border-right: none; }
+  .cell-label { color: #4a5568; font-size: 11.5px; font-weight: 500; }
+  .cell-a { background: rgba(24,95,165,.04); color: #b8c8dc; }
+  .cell-b { background: rgba(59,109,17,.04); color: #a8c487; }
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin: 1px 2px;
+    line-height: 1.7;
+  }
+  .ba { background: rgba(24,95,165,.2); color: #71b3ef; }
+  .bb { background: rgba(59,109,17,.2); color: #8fc55a; }
+  .bc { background: #1e2229; color: #4a5568; }
+  .win-a { color: #71b3ef; font-weight: 600; }
+  .win-b { color: #8fc55a; font-weight: 600; }
+
+  /* VERDICT */
+  .verdict {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid #1e2229;
+    background: #0a0c0f;
+  }
+  .v-col { padding: 22px 26px; }
+  .v-col:first-child { border-right: 1px solid #1e2229; }
+  .v-title { font-size: 12px; font-weight: 700; letter-spacing: .03em; margin-bottom: 12px; text-transform: uppercase; }
+  .v-title-a { color: #71b3ef; }
+  .v-title-b { color: #8fc55a; }
+  .v-item {
+    font-size: 12px;
+    color: #5a6a7e;
+    margin: 5px 0;
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .v-item::before { content: '→'; position: absolute; left: 0; color: #2d3744; }
+
+  .footer-bar {
+    padding: 14px 26px;
+    background: #0d0f12;
+    border-top: 1px solid #1e2229;
+    font-size: 11.5px;
+    color: #3d4a5c;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+  }
+  .footer-bar strong { color: #5a6a7e; }
+</style>
+</head>
+<body>
+
+<button class="dl-btn" onclick="downloadImage()">⬇ 이미지 다운로드</button>
+
+<div id="capture">
+
+  <!-- BANNER -->
+  <div class="banner">
+    <div class="banner-tag">Claude Code Framework 비교 분석 · 2026.03</div>
+    <div class="banner-title">
+      shanraisshan
+      <span class="vs">vs</span>
+      VoltAgent
+    </div>
+    <div class="banner-sub">Claude Code 서브에이전트 프레임워크 기능 완전 분석</div>
+    <div class="repo-pills">
+      <div class="pill pill-a"><span class="pill-dot"></span>shanraisshan / claude-code-best-practice</div>
+      <div class="pill pill-b"><span class="pill-dot"></span>VoltAgent / awesome-claude-code-subagents</div>
+    </div>
+  </div>
+
+  <!-- REPO HEADERS -->
+  <div class="repo-headers">
+    <div class="rh-blank"></div>
+    <div class="rh-col">
+      <div class="rh-name rh-name-a">shanraisshan</div>
+      <div class="rh-repo">claude-code-best-practice</div>
+      <span class="rh-star rh-star-a">★ 19.7k stars</span>
+      <div class="rh-link rh-link-a">github.com/shanraisshan/claude-code-best-practice</div>
+    </div>
+    <div class="rh-col">
+      <div class="rh-name rh-name-b">VoltAgent</div>
+      <div class="rh-repo">awesome-claude-code-subagents</div>
+      <span class="rh-star rh-star-b">★ 13k stars</span>
+      <div class="rh-link rh-link-b">github.com/VoltAgent/awesome-claude-code-subagents</div>
+    </div>
+  </div>
+
+  <!-- SECTION: 기본 성격 -->
+  <div class="section-head"><div class="sh-label">기본 성격</div></div>
+
+  <div class="row">
+    <div class="cell cell-label">포지셔닝</div>
+    <div class="cell cell-a"><span class="badge ba">원칙·철학</span> <span class="badge ba">Best Practice 가이드</span><br>베스트프랙티스 + 실전 팁 모음</div>
+    <div class="cell cell-b"><span class="badge bb">즉시사용</span> <span class="badge bb">에이전트 컬렉션</span><br>바로 설치해서 쓰는 서브에이전트 라이브러리</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">저자</div>
+    <div class="cell cell-a">Shan Raisshan (Claude Community Ambassador, Certified Architect)</div>
+    <div class="cell cell-b">VoltAgent 팀 + 커뮤니티 기여자 400명+</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">업데이트 방식</div>
+    <div class="cell cell-a">206 커밋 / Boris Cherny 트윗 실시간 반영</div>
+    <div class="cell cell-b">409 커밋 / PR로 에이전트 계속 추가 중</div>
+  </div>
+
+  <!-- SECTION: 서브에이전트 -->
+  <div class="section-head"><div class="sh-label">서브에이전트 커버리지</div></div>
+
+  <div class="row">
+    <div class="cell cell-label">에이전트 수</div>
+    <div class="cell cell-a"><span class="badge bc">소수 예시 중심</span> — 패턴 설명 위주</div>
+    <div class="cell cell-b win-b"><span class="badge bb">127개+</span> — 9개 카테고리, 127+ 에이전트 보유</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">카테고리</div>
+    <div class="cell cell-a"><span class="badge bc">미분류</span> 개념별 설명</div>
+    <div class="cell cell-b win-b">Core Dev · Lang · Infra · QA/Sec · Data/AI<br>DevExp · Domains · Biz · Meta (9개)</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">모델 자동 라우팅</div>
+    <div class="cell cell-a"><span class="badge bc">언급 없음</span></div>
+    <div class="cell cell-b win-b"><span class="badge bb">자동 모델 선택</span> Opus / Sonnet / Haiku 태스크별 자동 배정</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">Tool 권한 설계</div>
+    <div class="cell cell-a">원칙 설명 ("최소 권한 부여")</div>
+    <div class="cell cell-b win-b"><span class="badge bb">4단계 권한 분리</span> Read-only / Research / Code Writer / Doc</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">설치 방법</div>
+    <div class="cell cell-a"><span class="badge bc">수동 복사</span> ~/.claude/agents/ 설명</div>
+    <div class="cell cell-b win-b"><span class="badge bb">4가지 설치법</span> Plugin marketplace / 수동 / 스크립트 / agent-installer</div>
+  </div>
+
+  <!-- SECTION: 오케스트레이션 -->
+  <div class="section-head"><div class="sh-label">오케스트레이션 & 워크플로우</div></div>
+
+  <div class="row">
+    <div class="cell cell-label">오케스트레이션 패턴</div>
+    <div class="cell cell-a win-a"><span class="badge ba">Command → Agent → Skill</span> 명확한 3단계 패턴<br>SVG 다이어그램 + GIF 데모 포함</div>
+    <div class="cell cell-b"><span class="badge bb">meta 카테고리</span> multi-agent-coordinator 등 제공</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">멀티에이전트</div>
+    <div class="cell cell-a win-a"><span class="badge ba">Agent Teams (beta)</span> tmux + git worktrees 병렬 개발 가이드</div>
+    <div class="cell cell-b">meta-orchestration 카테고리 내 에이전트로 제공</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">스케줄링</div>
+    <div class="cell cell-a win-a"><span class="badge ba">/loop</span> Scheduled Tasks — 최대 3일 반복 실행 가이드 + 구현 예시</div>
+    <div class="cell cell-b"><span class="badge bc">미제공</span></div>
+  </div>
+
+  <!-- SECTION: 실전 노하우 -->
+  <div class="section-head"><div class="sh-label">실전 팁 & 노하우</div></div>
+
+  <div class="row">
+    <div class="cell cell-label">운영 팁 수</div>
+    <div class="cell cell-a win-a"><span class="badge ba">84개 팁</span> Boris Cherny (Claude Code 창시자) 직접 인용</div>
+    <div class="cell cell-b"><span class="badge bc">없음</span> 설치·사용법 위주</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">안티패턴 명시</div>
+    <div class="cell cell-a win-a">"작은 태스크엔 vanilla CC가 낫다" 등 언제 쓰지 말지 명확히 기술</div>
+    <div class="cell cell-b"><span class="badge bc">없음</span></div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">컨텍스트 관리</div>
+    <div class="cell cell-a win-a">/compact 시점, /clear 전략, 컨텍스트 드리프트 방지 팁 포함</div>
+    <div class="cell cell-b">context-manager 에이전트 제공 (실행 단위)</div>
+  </div>
+
+  <!-- SECTION: 설정 & 생태계 -->
+  <div class="section-head"><div class="sh-label">설정 & 생태계 연계</div></div>
+
+  <div class="row">
+    <div class="cell cell-label">CLAUDE.md 가이드</div>
+    <div class="cell cell-a win-a">7개 팁 + 200줄 이하 원칙 + 실전 예시 + @path import 패턴</div>
+    <div class="cell cell-b">기본 CLAUDE.md만 포함</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">Hooks</div>
+    <div class="cell cell-a win-a">5개 팁 + PreToolUse / PostToolUse / Stop hook 패턴 상세 설명</div>
+    <div class="cell cell-b"><span class="badge bc">없음</span></div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">MCP 통합</div>
+    <div class="cell cell-a win-a">Best Practice 문서 + .mcp.json 구현 예시 포함</div>
+    <div class="cell cell-b">mcp-developer 에이전트 1개 제공</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">Beta 기능 커버</div>
+    <div class="cell cell-a win-a">Channels / Code Review / Voice Dictation / Remote Control / Sandboxing 전부 문서화</div>
+    <div class="cell cell-b"><span class="badge bc">없음</span></div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">타 프레임워크 비교</div>
+    <div class="cell cell-a win-a">Superpowers / GSD / BMAD / OpenSpec 등 8개 비교표 내장</div>
+    <div class="cell cell-b"><span class="badge bc">없음</span></div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">서브에이전트 카탈로그 도구</div>
+    <div class="cell cell-a"><span class="badge bc">없음</span></div>
+    <div class="cell cell-b win-b"><span class="badge bb">/subagent-catalog</span> search / fetch / list / invalidate 커맨드</div>
+  </div>
+  <div class="row">
+    <div class="cell cell-label">커뮤니티</div>
+    <div class="cell cell-a"><span class="badge bc">없음</span></div>
+    <div class="cell cell-b win-b">Discord 채널 운영 중</div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict">
+    <div class="v-col">
+      <div class="v-title v-title-a">shanraisshan을 써야 할 때</div>
+      <div class="v-item">서브에이전트 개념·설계 원칙을 배우고 싶을 때</div>
+      <div class="v-item">오케스트레이션 아키텍처를 직접 설계할 때</div>
+      <div class="v-item">Beta 기능 (Agent Teams, Channels 등) 활용할 때</div>
+      <div class="v-item">Hooks · MCP · CLAUDE.md 세팅을 최적화할 때</div>
+      <div class="v-item">Claude Code 책 집필 레퍼런스로 활용할 때</div>
+    </div>
+    <div class="v-col">
+      <div class="v-title v-title-b">VoltAgent를 써야 할 때</div>
+      <div class="v-item">즉시 쓸 수 있는 에이전트가 필요할 때</div>
+      <div class="v-item">특정 언어/프레임워크 전문가 에이전트 필요시</div>
+      <div class="v-item">자동 모델 라우팅 (Opus/Sonnet/Haiku) 원할 때</div>
+      <div class="v-item">Plugin marketplace로 팀 전체에 배포할 때</div>
+      <div class="v-item">실습 예제·코드 소스로 활용할 때</div>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <strong>조합 추천</strong> → shanraisshan으로 구조와 철학을 잡고, VoltAgent로 즉시 사용 가능한 에이전트를 가져다 쓰는 것이 최적 · 실전 클로드 코드 개발하기
+  </div>
+
+</div>
+
+<script>
+async function downloadImage() {
+  const btn = document.querySelector('.dl-btn');
+  btn.textContent = '생성 중...';
+  btn.disabled = true;
+  try {
+    const el = document.getElementById('capture');
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#111418',
+      logging: false,
+      width: el.offsetWidth,
+      height: el.offsetHeight
+    });
+    const link = document.createElement('a');
+    link.download = 'shanraisshan_vs_voltagent.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    alert('오류가 발생했습니다: ' + e.message);
+  } finally {
+    btn.textContent = '⬇ 이미지 다운로드';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

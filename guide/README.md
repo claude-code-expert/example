@@ -12,3 +12,4 @@
 | [`claude-code-cheatsheet-ko.md`](guide/claude-code-cheatsheet-ko.md) | 위와 동일 내용의 Markdown 버전 |
 | [미공개 예정 기능 분석 (HTML)](https://claude-code-expert.github.io/example/guide/claude-code-unshipped.html) | npm 소스 유출(2026-03-31) 기반 23개 미출시 기능 정리 (인터랙티브 버전) |
 | [`claude-code-unshipped.md`](guide/claude-code-unshipped.md) | 위와 동일 내용의 Markdown 버전 |
+| [shanraisshan vs VoltAgent 비교 분석 (HTML)](https://claude-code-expert.github.io/example/guide/cc-best-practice_awesome-cc-subagent.html) | Claude Code 서브에이전트 프레임워크 2종 기능 비교 (인터랙티브 버전) |

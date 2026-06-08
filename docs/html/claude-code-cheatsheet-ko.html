@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 치트시트 — 한국어 (라이트)</title>
+<!--
+  폰트 선택 이유:
+  - Noto Sans KR: 한글 설명 가독성이 높아 본문/설명에 사용
+  - JetBrains Mono: 단축키·명령어·플래그·환경변수는 고정폭이라야 기호·공백 식별이 쉬움
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #FFFFFF;
+    --panel:     #F7F8FA;
+    --card:      #FFFFFF;
+    --text:      #111111;
+    --muted:     #6B7280;
+    --border:    #E5E7EB;
+    --line-strong:#C4CBD4;
+    --code-bg:   #F3F4F6;
+    --accent:    #B45309;   /* 단일 액센트(deep amber) — 활성 탭·키워드·링크에만 */
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sans: 'Noto Sans KR', -apple-system, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 0 64px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── 헤더 ── */
+  header { padding: 40px 0 16px; border-bottom: 1px solid var(--border); }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .lead { color: var(--muted); font-size: 15px; margin-top: 10px; max-width: 720px; }
+  .head-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .ko-toggle {
+    font-family: var(--mono); font-size: 12.5px;
+    border: 1px solid var(--line-strong); background: var(--bg); color: var(--text);
+    padding: 6px 12px; border-radius: 8px; cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .ko-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── 탭 ── */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0 4px;
+          border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+  .tab {
+    font-family: var(--mono); font-size: 13px;
+    border: 1px solid var(--line-strong); background: var(--bg); color: var(--muted);
+    padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+  /* ── 패널 ── */
+  .panel { display: none; padding-top: 24px; }
+  .panel.on { display: block; }
+  .panel-intro { font-size: 14px; color: var(--muted); margin-bottom: 18px; max-width: 760px; }
+
+  .cards {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    align-items: start;
+  }
+  .card {
+    border: 1px solid var(--border); border-radius: 10px; background: var(--card);
+    padding: 14px 16px;
+  }
+  /* Stack variant: every card spans the full width (no left/right split) — used
+     by the 모델·Effort·Fast tab so all its tables look consistent. */
+  .cards.stack { grid-template-columns: 1fr; }
+  .sub {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+    padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+
+  /* ── 행 ── */
+  .row { display: grid; grid-template-columns: 168px 1fr; gap: 10px; padding: 5px 0; align-items: start; }
+  .row + .row { border-top: 1px dashed var(--border); }
+  .k {
+    font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  /* min-width:0 lets the 1fr column shrink instead of overflowing the card;
+     overflow-wrap breaks long tokens like CLAUDE_CODE_EFFORT_LEVEL. */
+  .d { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .en { font-size: 13.5px; color: var(--muted); line-height: 1.45; overflow-wrap: anywhere; }
+  .ko { font-size: 13.5px; color: var(--text); line-height: 1.45; overflow-wrap: anywhere; }
+  body.ko-hidden .ko { display: none; }
+  .d code, .en code, .ko code {
+    font-family: var(--mono); font-size: .92em; background: var(--code-bg);
+    border: 1px solid var(--border); border-radius: 4px; padding: 0 4px;
+  }
+  .warn { color: var(--accent); font-weight: 600; }
+
+  /* 키캡 */
+  .kc { display: inline-block; background: var(--panel); border: 1px solid var(--line-strong);
+        border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-family: var(--mono);
+        font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.7; margin-right: 2px; }
+
+  /* ── 푸터 ── */
+  footer { margin-top: 36px; border-top: 1px solid var(--border); padding-top: 16px;
+           font-size: 13px; color: var(--muted); }
+  footer .legend { margin-bottom: 8px; }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  .src { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; font-size: 12.5px; }
+
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 1fr; gap: 2px; }
+    h1 { font-size: 25px; }
+  }
+  @media print {
+    .tabs, .ko-toggle { display: none; }
+    .panel { display: block !important; padding-top: 16px; }
+    .panel::before { content: attr(data-title); display: block; font-weight: 700; font-size: 18px; margin: 18px 0 8px; }
+    body { padding: 0; }
+    a::after { content: " (" attr(href) ")"; font-size: 11px; color: var(--muted); }
+    .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Claude Code · Reference</div>
+    <h1>Claude Code 치트시트</h1>
+    <p class="lead">자주 쓰는 단축키·명령어·설정을 카테고리 탭으로 정리했습니다. 영어 원문 + 한국어 설명 병기이며, 공식 문서·CHANGELOG와 대조해 검증했습니다.</p>
+    <div class="head-meta">
+      <button class="ko-toggle" id="koBtn" type="button">한국어 설명: 켜짐</button>
+      <span class="meta">검증 기준: code.claude.com/docs · CHANGELOG · 2026-06</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-t="kbd">키보드</button>
+    <button class="tab" data-t="slash">슬래시 명령</button>
+    <button class="tab" data-t="cli">CLI · 플래그</button>
+    <button class="tab" data-t="model">모델 · Effort · Fast</button>
+    <button class="tab" data-t="skill">스킬 · 에이전트</button>
+    <button class="tab" data-t="mem">메모리 · CLAUDE.md</button>
+    <button class="tab" data-t="cfg">설정 · 환경변수</button>
+    <button class="tab" data-t="mcp">MCP · 훅</button>
+  </nav>
+
+  <!-- 키보드 -->
+  <section class="panel on" id="t-kbd" data-title="키보드 단축키">
+    <p class="panel-intro">대화형(TUI) 모드 단축키. macOS는 Alt 대신 Option 키입니다.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="sub">기본 조작</div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">C</span></div><div class="d"><span class="en">Cancel input / generation</span><span class="ko">입력·생성 취소</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">D</span></div><div class="d"><span class="en">Exit session</span><span class="ko">세션 종료</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">L</span></div><div class="d"><span class="en">Redraw / clear screen</span><span class="ko">화면 다시 그리기</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">O</span></div><div class="d"><span class="en">Toggle transcript viewer</span><span class="ko">대화 기록(transcript) 토글</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">R</span></div><div class="d"><span class="en">Reverse history search</span><span class="ko">히스토리 역방향 검색</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">G</span></div><div class="d"><span class="en">Open prompt in editor</span><span class="ko">외부 에디터로 프롬프트 열기 (또는 <code>Ctrl+X Ctrl+E</code>)</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">T</span></div><div class="d"><span class="en">Toggle task list</span><span class="ko">작업 목록 토글</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">V</span></div><div class="d"><span class="en">Paste image</span><span class="ko">이미지 붙여넣기</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">에이전트 / 되감기</div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">B</span></div><div class="d"><span class="en">Send running task to background</span><span class="ko">실행 중 작업을 백그라운드로 전환</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Ctrl</span><span class="kc">X</span> <span class="kc">Ctrl</span><span class="kc">K</span></div><div class="d"><span class="en">Kill all background subagents</span><span class="ko">백그라운드 에이전트 전체 종료 (3초 내 두 번)</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Esc</span><span class="kc">Esc</span></div><div class="d"><span class="en">Rewind conversation / code</span><span class="ko">대화·코드 되감기(rewind)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">모드 전환</div>
+        <div class="row"><div class="k"><span class="kc">Shift</span><span class="kc">Tab</span></div><div class="d"><span class="en">Cycle permission modes</span><span class="ko">권한 모드 순환: default · acceptEdits · plan · auto · bypassPermissions</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Alt</span><span class="kc">P</span></div><div class="d"><span class="en">Switch model</span><span class="ko">모델 전환</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Alt</span><span class="kc">T</span></div><div class="d"><span class="en">Toggle thinking</span><span class="ko">thinking(사고) 모드 토글</span></div></div>
+        <div class="row"><div class="k"><span class="kc">Alt</span><span class="kc">O</span></div><div class="d"><span class="en">Toggle fast mode</span><span class="ko">fast 모드 토글</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">입력 / 접두어</div>
+        <div class="row"><div class="k"><span class="kc">\</span> <span class="kc">Enter</span></div><div class="d"><span class="en">Insert newline</span><span class="ko">줄바꿈 입력</span></div></div>
+        <div class="row"><div class="k"><code>/</code></div><div class="d"><span class="en">Slash command / skill</span><span class="ko">슬래시 명령·스킬 호출</span></div></div>
+        <div class="row"><div class="k"><code>!</code></div><div class="d"><span class="en">Run bash directly</span><span class="ko">bash 명령 직접 실행</span></div></div>
+        <div class="row"><div class="k"><code>@</code></div><div class="d"><span class="en">File mention + autocomplete</span><span class="ko">파일 멘션·자동완성</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 슬래시 명령 -->
+  <section class="panel" id="t-slash" data-title="슬래시 명령어">
+    <p class="panel-intro">입력창 맨 앞에서 <code>/</code> 로 호출(뒤 텍스트는 인자: <code>&lt;필수&gt;</code> · <code>[선택]</code>). 표시되는 명령은 플랫폼·요금제·환경에 따라 다릅니다. 출처: code.claude.com/docs/en/commands.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="sub">세션</div>
+        <div class="row"><div class="k">/clear [name]</div><div class="d"><span class="en">New conversation (old kept in /resume) · /reset /new</span><span class="ko">새 대화 (이전은 /resume에 보존)</span></div></div>
+        <div class="row"><div class="k">/compact [focus]</div><div class="d"><span class="en">Summarize to free context</span><span class="ko">요약해 컨텍스트 확보</span></div></div>
+        <div class="row"><div class="k">/context [all]</div><div class="d"><span class="en">Visualize context usage</span><span class="ko">컨텍스트 사용량 시각화</span></div></div>
+        <div class="row"><div class="k">/resume [session]</div><div class="d"><span class="en">Resume by id/name or picker · /continue</span><span class="ko">세션 재개·피커</span></div></div>
+        <div class="row"><div class="k">/rename [name]</div><div class="d"><span class="en">Rename current session</span><span class="ko">세션 이름 변경</span></div></div>
+        <div class="row"><div class="k">/branch [name]</div><div class="d"><span class="en">Branch conversation (original kept)</span><span class="ko">대화 분기 (원본 보존)</span></div></div>
+        <div class="row"><div class="k">/fork &lt;directive&gt;</div><div class="d"><span class="en">Background subagent inheriting the conversation</span><span class="ko">대화 상속 백그라운드 서브에이전트</span></div></div>
+        <div class="row"><div class="k">/rewind</div><div class="d"><span class="en">Restore checkpoint · /checkpoint /undo</span><span class="ko">체크포인트 되돌리기</span></div></div>
+        <div class="row"><div class="k">/export · /copy [N] · /recap</div><div class="d"><span class="en">Export · copy a reply · one-line recap</span><span class="ko">내보내기·응답 복사·세션 요약</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">설정</div>
+        <div class="row"><div class="k">/config</div><div class="d"><span class="en">Settings UI · /settings</span><span class="ko">설정 인터페이스</span></div></div>
+        <div class="row"><div class="k">/model [model]</div><div class="d"><span class="en">Switch model (saves default)</span><span class="ko">모델 전환</span></div></div>
+        <div class="row"><div class="k">/effort [level|auto]</div><div class="d"><span class="en">low · medium · high · xhigh · max · ultracode</span><span class="ko">추론 강도 (max·ultracode는 세션 한정)</span></div></div>
+        <div class="row"><div class="k">/fast [on|off]</div><div class="d"><span class="en">Toggle fast mode</span><span class="ko">패스트 모드 토글</span></div></div>
+        <div class="row"><div class="k">/theme · /color</div><div class="d"><span class="en">Color theme · prompt-bar color</span><span class="ko">테마·프롬프트 바 색상</span></div></div>
+        <div class="row"><div class="k">/permissions</div><div class="d"><span class="en">allow/ask/deny rules · /allowed-tools</span><span class="ko">권한 규칙 관리</span></div></div>
+        <div class="row"><div class="k">/statusline · /keybindings</div><div class="d"><span class="en">Status line · keybindings file</span><span class="ko">상태줄·단축키 구성</span></div></div>
+        <div class="row"><div class="k">/terminal-setup · /tui</div><div class="d"><span class="en">Terminal keys · TUI renderer (fullscreen)</span><span class="ko">터미널 키·렌더러</span></div></div>
+        <div class="row"><div class="k">/sandbox</div><div class="d"><span class="en">Toggle sandbox mode</span><span class="ko">샌드박스 토글</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">도구 · 메모리 · 확장</div>
+        <div class="row"><div class="k">/init</div><div class="d"><span class="en">Initialize CLAUDE.md</span><span class="ko">CLAUDE.md 초기화</span></div></div>
+        <div class="row"><div class="k">/memory</div><div class="d"><span class="en">Edit CLAUDE.md · auto-memory</span><span class="ko">메모리 편집·오토메모리</span></div></div>
+        <div class="row"><div class="k">/add-dir &lt;path&gt;</div><div class="d"><span class="en">Add a working directory</span><span class="ko">작업 디렉터리 추가</span></div></div>
+        <div class="row"><div class="k">/agents</div><div class="d"><span class="en">Manage subagents</span><span class="ko">서브에이전트 관리</span></div></div>
+        <div class="row"><div class="k">/mcp</div><div class="d"><span class="en">MCP servers + OAuth</span><span class="ko">MCP 서버·인증</span></div></div>
+        <div class="row"><div class="k">/hooks</div><div class="d"><span class="en">Configure hooks</span><span class="ko">훅 구성</span></div></div>
+        <div class="row"><div class="k">/skills</div><div class="d"><span class="en">List available skills</span><span class="ko">스킬 목록</span></div></div>
+        <div class="row"><div class="k">/plugin [sub]</div><div class="d"><span class="en">Plugins: list / install / enable</span><span class="ko">플러그인 관리</span></div></div>
+        <div class="row"><div class="k">/reload-skills · /reload-plugins</div><div class="d"><span class="en">Rescan without restart</span><span class="ko">재시작 없이 리로드</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">작업 · 리뷰 (스킬·워크플로)</div>
+        <div class="row"><div class="k">/plan [desc]</div><div class="d"><span class="en">Read-only plan mode</span><span class="ko">플랜 모드</span></div></div>
+        <div class="row"><div class="k">/code-review [lvl]</div><div class="d"><span class="en">Bugs + cleanup; <code>--fix</code> <code>--comment</code>; <code>ultra</code> = cloud</span><span class="ko">버그·정리 리뷰 (ultra=클라우드)</span></div></div>
+        <div class="row"><div class="k">/simplify [target]</div><div class="d"><span class="en">Cleanup-only review &amp; fix</span><span class="ko">정리 전용 리뷰·수정</span></div></div>
+        <div class="row"><div class="k">/security-review</div><div class="d"><span class="en">Security analysis of changes</span><span class="ko">보안 취약점 분석</span></div></div>
+        <div class="row"><div class="k">/review [PR]</div><div class="d"><span class="en">Local PR review</span><span class="ko">PR 로컬 리뷰</span></div></div>
+        <div class="row"><div class="k">/ultrareview [PR]</div><div class="d"><span class="en">Cloud deep review (= /code-review ultra)</span><span class="ko">클라우드 심층 리뷰</span></div></div>
+        <div class="row"><div class="k">/debug [desc]</div><div class="d"><span class="en">Debug-log troubleshooting</span><span class="ko">디버그 로그 분석</span></div></div>
+        <div class="row"><div class="k">/goal [cond|clear]</div><div class="d"><span class="en">Work autonomously until met</span><span class="ko">목표 충족까지 진행</span></div></div>
+        <div class="row"><div class="k">/loop [interval] [p]</div><div class="d"><span class="en">Repeat on interval · /proactive</span><span class="ko">반복 실행</span></div></div>
+        <div class="row"><div class="k">/batch &lt;instruction&gt;</div><div class="d"><span class="en">Large parallel changes (worktrees)</span><span class="ko">대규모 병렬 변경</span></div></div>
+        <div class="row"><div class="k">/workflows</div><div class="d"><span class="en">Workflow run viewer</span><span class="ko">워크플로 진행 뷰</span></div></div>
+        <div class="row"><div class="k">/deep-research &lt;q&gt;</div><div class="d"><span class="en">Fan-out research report</span><span class="ko">분산 리서치 리포트</span></div></div>
+        <div class="row"><div class="k">/run · /verify</div><div class="d"><span class="en">Run app · verify a change</span><span class="ko">앱 실행·변경 검증</span></div></div>
+        <div class="row"><div class="k">/autofix-pr [p]</div><div class="d"><span class="en">Auto-fix PR CI / review comments</span><span class="ko">PR CI·리뷰 자동 수정</span></div></div>
+        <div class="row"><div class="k">/ultraplan &lt;p&gt;</div><div class="d"><span class="en">Plan → browser review → remote run</span><span class="ko">계획 초안·원격 실행</span></div></div>
+        <div class="row"><div class="k">/claude-api</div><div class="d"><span class="en">Load API / SDK reference</span><span class="ko">API·SDK 레퍼런스</span></div></div>
+        <div class="row"><div class="k">/fewer-permission-prompts</div><div class="d"><span class="en">Allowlist safe read-only calls</span><span class="ko">권한 프롬프트 감소</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">원격 · 백그라운드 · 플랫폼</div>
+        <div class="row"><div class="k">/background [p]</div><div class="d"><span class="en">Detach to background agent · /bg</span><span class="ko">백그라운드로 분리</span></div></div>
+        <div class="row"><div class="k">/tasks · /stop</div><div class="d"><span class="en">Background items (/bashes) · stop session</span><span class="ko">백그라운드 항목·중지</span></div></div>
+        <div class="row"><div class="k">/teleport</div><div class="d"><span class="en">Web session → this terminal · /tp</span><span class="ko">웹 세션을 터미널로</span></div></div>
+        <div class="row"><div class="k">/remote-control · /remote-env</div><div class="d"><span class="en">Web remote control (/rc) · cloud env</span><span class="ko">웹 원격 제어·클라우드 환경</span></div></div>
+        <div class="row"><div class="k">/schedule [desc]</div><div class="d"><span class="en">Cloud routines · /routines</span><span class="ko">클라우드 루틴</span></div></div>
+        <div class="row"><div class="k">/web-setup</div><div class="d"><span class="en">Connect GitHub to Claude Code on the web</span><span class="ko">웹에 GitHub 연결</span></div></div>
+        <div class="row"><div class="k">/desktop · /mobile</div><div class="d"><span class="en">Continue in desktop app · mobile QR</span><span class="ko">데스크톱 앱·모바일</span></div></div>
+        <div class="row"><div class="k">/chrome · /voice</div><div class="d"><span class="en">Claude in Chrome · voice dictation</span><span class="ko">Chrome 연동·음성 입력</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">계정 · 진단 · 기타</div>
+        <div class="row"><div class="k">/login · /logout</div><div class="d"><span class="en">Sign in / out</span><span class="ko">로그인·로그아웃</span></div></div>
+        <div class="row"><div class="k">/help · /doctor · /status</div><div class="d"><span class="en">Help · diagnose · status tab</span><span class="ko">도움말·진단·상태</span></div></div>
+        <div class="row"><div class="k">/usage</div><div class="d"><span class="en">Cost / limits / activity · /cost /stats</span><span class="ko">사용량·비용·한도</span></div></div>
+        <div class="row"><div class="k">/release-notes · /feedback</div><div class="d"><span class="en">Changelog · feedback (/bug /share)</span><span class="ko">체인지로그·피드백</span></div></div>
+        <div class="row"><div class="k">/upgrade · /passes · /usage-credits</div><div class="d"><span class="en">Plan upgrade · share · credits</span><span class="ko">요금제·공유·크레딧</span></div></div>
+        <div class="row"><div class="k">/insights · /team-onboarding</div><div class="d"><span class="en">Session analytics · team guide</span><span class="ko">세션 분석·팀 온보딩</span></div></div>
+        <div class="row"><div class="k">/install-github-app · -slack-app</div><div class="d"><span class="en">GitHub Actions · Slack integration</span><span class="ko">GitHub·Slack 통합</span></div></div>
+        <div class="row"><div class="k">/setup-bedrock · /setup-vertex</div><div class="d"><span class="en">Bedrock / Vertex AI setup</span><span class="ko">Bedrock·Vertex 설정</span></div></div>
+        <div class="row"><div class="k">/btw &lt;q&gt;</div><div class="d"><span class="en">Side question (not logged)</span><span class="ko">곁다리 질문 (기록 안 남김)</span></div></div>
+        <div class="row"><div class="k">/powerup · /focus · /radio</div><div class="d"><span class="en">Feature demo · focus view · lo-fi radio</span><span class="ko">데모·포커스·라디오</span></div></div>
+        <div class="row"><div class="k">/exit</div><div class="d"><span class="en">Quit CLI · /quit</span><span class="ko">종료</span></div></div>
+      </div>
+    </div>
+    <p class="panel-intro" style="margin-top:14px;">제거됨: <code>/pr-comments</code> (v2.1.91 — Claude에게 직접 "PR 코멘트 보여줘") · <code>/vim</code> (v2.1.92 — <code>/config</code> → Editor mode). 본인 버전 기준은 세션에서 <code>/</code> 또는 <code>/help</code>로 확인.</p>
+  </section>
+
+  <!-- CLI -->
+  <section class="panel" id="t-cli" data-title="CLI · 플래그">
+    <p class="panel-intro">터미널에서 <code>claude</code> 실행 시 사용하는 명령과 플래그.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="sub">기본 실행</div>
+        <div class="row"><div class="k">claude</div><div class="d"><span class="en">Interactive session</span><span class="ko">대화형 세션 시작</span></div></div>
+        <div class="row"><div class="k">claude "query"</div><div class="d"><span class="en">Start with an initial prompt</span><span class="ko">초기 프롬프트로 시작</span></div></div>
+        <div class="row"><div class="k">claude -p "query"</div><div class="d"><span class="en">Headless / print mode, then exit</span><span class="ko">헤드리스 단일 실행 후 종료</span></div></div>
+        <div class="row"><div class="k">cat f | claude -p</div><div class="d"><span class="en">Pipe stdin into a prompt</span><span class="ko">파이프 입력 처리</span></div></div>
+        <div class="row"><div class="k">claude -c</div><div class="d"><span class="en">Continue last conversation</span><span class="ko">마지막 대화 이어가기</span></div></div>
+        <div class="row"><div class="k">claude -r "name"</div><div class="d"><span class="en">Resume by id/name (no arg = picker)</span><span class="ko">세션 재개 (인자 없으면 선택기)</span></div></div>
+        <div class="row"><div class="k">claude --version</div><div class="d"><span class="en">Print version</span><span class="ko">버전 출력</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">세션 · 원격 · 워크트리</div>
+        <div class="row"><div class="k">claude --remote "task"</div><div class="d"><span class="en">Create a web session on claude.ai</span><span class="ko">claude.ai 클라우드 세션 생성</span></div></div>
+        <div class="row"><div class="k">claude --teleport</div><div class="d"><span class="en">Pull a web session into the terminal</span><span class="ko">웹 세션을 로컬 터미널로 가져오기</span></div></div>
+        <div class="row"><div class="k">claude --from-pr &lt;num&gt;</div><div class="d"><span class="en">Resume the session linked to a PR</span><span class="ko">PR에 연결된 세션 재개</span></div></div>
+        <div class="row"><div class="k">claude --ide</div><div class="d"><span class="en">Auto-connect to an available IDE</span><span class="ko">사용 가능한 IDE 자동 연결</span></div></div>
+        <div class="row"><div class="k">claude -w [name]</div><div class="d"><span class="en">Run in a git worktree (<code>--worktree</code>)</span><span class="ko">git 워크트리에서 실행</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">백그라운드 에이전트</div>
+        <div class="row"><div class="k">claude --bg "prompt"</div><div class="d"><span class="en">Start a background agent (returns session id)</span><span class="ko">백그라운드 에이전트 시작 (세션 ID 반환)</span></div></div>
+        <div class="row"><div class="k">claude agents</div><div class="d"><span class="en">Monitor / dispatch background sessions</span><span class="ko">백그라운드 세션 모니터링·관리</span></div></div>
+        <div class="row"><div class="k">claude attach · logs · stop &lt;id&gt;</div><div class="d"><span class="en">Attach to / tail / stop a session</span><span class="ko">세션 연결·로그·중지</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">유지보수 · 인증 · 플러그인</div>
+        <div class="row"><div class="k">claude update</div><div class="d"><span class="en">Update to latest</span><span class="ko">최신 버전으로 업데이트</span></div></div>
+        <div class="row"><div class="k">claude doctor</div><div class="d"><span class="en">Diagnose install / setup</span><span class="ko">설치·환경 진단</span></div></div>
+        <div class="row"><div class="k">claude install [ver]</div><div class="d"><span class="en">Install / reinstall native binary</span><span class="ko">네이티브 바이너리 설치·재설치</span></div></div>
+        <div class="row"><div class="k">claude setup-token</div><div class="d"><span class="en">Long-lived OAuth token for CI</span><span class="ko">CI/스크립트용 장기 토큰 발급</span></div></div>
+        <div class="row"><div class="k">claude auth login · logout · status</div><div class="d"><span class="en">Sign in / out, check auth</span><span class="ko">로그인·로그아웃·인증 상태</span></div></div>
+        <div class="row"><div class="k">claude plugin install &lt;name&gt;</div><div class="d"><span class="en">Plugins: <code>list</code> · <code>marketplace add &lt;src&gt;</code></span><span class="ko">플러그인 설치·목록·마켓플레이스</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">주요 플래그</div>
+        <div class="row"><div class="k">--model</div><div class="d"><span class="en">Set model</span><span class="ko">모델 지정</span></div></div>
+        <div class="row"><div class="k">--effort</div><div class="d"><span class="en">low / medium / high / max</span><span class="ko">추론 강도</span></div></div>
+        <div class="row"><div class="k">--permission-mode</div><div class="d"><span class="en">plan / default / acceptEdits …</span><span class="ko">권한 모드</span></div></div>
+        <div class="row"><div class="k">-w, --worktree</div><div class="d"><span class="en">Run in a git worktree</span><span class="ko">git 워크트리에서 실행</span></div></div>
+        <div class="row"><div class="k">--add-dir</div><div class="d"><span class="en">Add working directory</span><span class="ko">작업 디렉터리 추가</span></div></div>
+        <div class="row"><div class="k">--agent</div><div class="d"><span class="en">Dispatch to a subagent</span><span class="ko">특정 에이전트로 실행</span></div></div>
+        <div class="row"><div class="k">--allowedTools</div><div class="d"><span class="en">Pre-approve tools</span><span class="ko">도구 사전 승인</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">헤드리스 / 자동화</div>
+        <div class="row"><div class="k">--output-format</div><div class="d"><span class="en">text / json / stream-json</span><span class="ko">출력 형식</span></div></div>
+        <div class="row"><div class="k">--max-turns</div><div class="d"><span class="en">Limit agentic turns</span><span class="ko">에이전트 최대 턴 제한</span></div></div>
+        <div class="row"><div class="k">--max-budget-usd</div><div class="d"><span class="en">Cost cap (USD)</span><span class="ko">비용 상한(달러)</span></div></div>
+        <div class="row"><div class="k">--fallback-model</div><div class="d"><span class="en">Auto-retry on overload</span><span class="ko">과부하 시 대체 모델로 재시도</span></div></div>
+        <div class="row"><div class="k">--bare</div><div class="d"><span class="en">Minimal headless (no hooks/LSP)</span><span class="ko">경량 헤드리스 (훅·LSP 없음)</span></div></div>
+        <div class="row"><div class="k">--verbose</div><div class="d"><span class="en">Verbose output</span><span class="ko">상세 출력</span></div></div>
+        <div class="row"><div class="k">--remote</div><div class="d"><span class="en">Web session on claude.ai</span><span class="ko">claude.ai 웹 세션</span></div></div>
+        <div class="row"><div class="k">--dangerously-skip-permissions</div><div class="d"><span class="en warn">Skip all prompts — CI only</span><span class="ko warn">모든 권한 프롬프트 스킵 (CI 전용 · 주의)</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 모델 -->
+  <section class="panel" id="t-model" data-title="모델 · Effort · Fast">
+    <p class="panel-intro">2026-06 기준 최신 라인업. 플랜별 기본값·가용성은 공식 문서에서 최종 확인하세요.</p>
+    <div class="cards stack">
+      <div class="card">
+        <div class="sub">모델 라인업</div>
+        <div class="row"><div class="k">Opus 4.8</div><div class="d"><span class="en">Latest, most capable (default on Max/Team/Ent)</span><span class="ko">최신·최고 성능 (별칭 <code>opus</code>)</span></div></div>
+        <div class="row"><div class="k">Opus 4.7 · 4.6</div><div class="d"><span class="en">Previous Opus releases</span><span class="ko">이전 Opus 버전</span></div></div>
+        <div class="row"><div class="k">Sonnet 4.6</div><div class="d"><span class="en">Balanced (alias <code>sonnet</code>)</span><span class="ko">균형형 (별칭 <code>sonnet</code>)</span></div></div>
+        <div class="row"><div class="k">Haiku 4.5</div><div class="d"><span class="en">Fast / light (alias <code>haiku</code>)</span><span class="ko">빠르고 가벼움 (별칭 <code>haiku</code>)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">1M 컨텍스트</div>
+        <div class="row"><div class="k">opus[1m]</div><div class="d"><span class="en">Opus 4.8 / 4.7 / 4.6 · included on Max/Team/Ent</span><span class="ko">Max/Team/Enterprise 포함</span></div></div>
+        <div class="row"><div class="k">sonnet[1m]</div><div class="d"><span class="en">Sonnet 4.6 · uses usage credits</span><span class="ko">크레딧 사용</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">Effort 레벨 (추론 강도)</div>
+        <div class="row"><div class="k">low</div><div class="d"><span class="en">Fast, scoped, latency-sensitive tasks</span><span class="ko">짧고 빠른 작업 (지연 최소)</span></div></div>
+        <div class="row"><div class="k">medium</div><div class="d"><span class="en">Lower token use, cost-sensitive</span><span class="ko">토큰 절약 (비용 우선)</span></div></div>
+        <div class="row"><div class="k">high</div><div class="d"><span class="en">Default — balances tokens &amp; intelligence</span><span class="ko">기본값 · 균형 (일반 코딩)</span></div></div>
+        <div class="row"><div class="k">xhigh</div><div class="d"><span class="en">Deeper reasoning, more tool calls — Opus 4.8 / 4.7 only</span><span class="ko">더 깊은 추론·반복 탐색 (Opus 4.8/4.7 전용)</span></div></div>
+        <div class="row"><div class="k">max</div><div class="d"><span class="en">Deepest reasoning, no token cap (session-only)</span><span class="ko">최심 추론·토큰 무제한 (세션 한정, 과사고 주의)</span></div></div>
+        <div class="row"><div class="k">ultracode</div><div class="d"><span class="en">xhigh + auto dynamic multi-agent workflows (Claude Code only · Opus 4.8/4.7)</span><span class="ko">xhigh + 동적 멀티에이전트 워크플로 자동 구성 (CC 전용·세션 한정)</span></div></div>
+        <div class="row"><div class="k">auto</div><div class="d"><span class="en">Reset to the model's default</span><span class="ko">모델 기본값으로 초기화</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">Effort 설정 · 기본값</div>
+        <div class="row"><div class="k">/effort [level]</div><div class="d"><span class="en">Set in session (or <code>--effort</code>, <code>CLAUDE_CODE_EFFORT_LEVEL</code>)</span><span class="ko">세션 설정 (CLI 플래그·환경변수도 가능)</span></div></div>
+        <div class="row"><div class="k">기본값</div><div class="d"><span class="en">Opus 4.8 · 4.6 · Sonnet 4.6 = high · Opus 4.7 = xhigh</span><span class="ko">모델별 기본 effort</span></div></div>
+        <div class="row"><div class="k">폴백</div><div class="d"><span class="en">Unsupported level → highest supported below (xhigh→high on Opus 4.6 / Sonnet 4.6)</span><span class="ko">미지원 레벨은 지원되는 최고치로 폴백</span></div></div>
+        <div class="row"><div class="k">지속성</div><div class="d"><span class="en">low–xhigh persist (settings.json); max &amp; ultracode are session-only</span><span class="ko">low~xhigh만 지속, max·ultracode는 세션 한정</span></div></div>
+        <div class="row"><div class="k">ultrathink</div><div class="d"><span class="en">One-turn keyword for deeper thinking (not an effort level)</span><span class="ko">한 턴만 깊게 (effort 레벨 아님 · 프롬프트에 포함)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">Fast 모드</div>
+        <div class="row"><div class="k">/fast · <span class="kc">Alt</span><span class="kc">O</span></div><div class="d"><span class="en">Toggle (or <code>fastMode: true</code>)</span><span class="ko">토글 (설정 <code>fastMode</code>)</span></div></div>
+        <div class="row"><div class="k">지원 모델</div><div class="d"><span class="en">Opus 4.8 / 4.7 / 4.6 only</span><span class="ko">Opus 전용 (Sonnet·Haiku 제외)</span></div></div>
+        <div class="row"><div class="k">동작</div><div class="d"><span class="en">Same Opus model, faster output</span><span class="ko">같은 Opus를 더 빠른 출력으로 (작은 모델 아님)</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 스킬 -->
+  <section class="panel" id="t-skill" data-title="스킬 · 에이전트">
+    <p class="panel-intro">스킬(SKILL.md)은 재사용 가능한 절차, 에이전트(subagent)는 독립 컨텍스트 실행 단위.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="sub">내장 스킬 (명령)</div>
+        <div class="row"><div class="k">/code-review · /simplify</div><div class="d"><span class="en">Bug review · cleanup</span><span class="ko">버그 리뷰·정리</span></div></div>
+        <div class="row"><div class="k">/debug · /loop</div><div class="d"><span class="en">Troubleshoot · recurring task</span><span class="ko">디버깅·반복 작업</span></div></div>
+        <div class="row"><div class="k">/run · /verify</div><div class="d"><span class="en">Launch app · verify a change</span><span class="ko">앱 실행·변경 검증</span></div></div>
+        <div class="row"><div class="k">/claude-api</div><div class="d"><span class="en">API / SDK reference</span><span class="ko">API·SDK 레퍼런스</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">커스텀 스킬 위치</div>
+        <div class="row"><div class="k">.claude/skills/&lt;name&gt;/SKILL.md</div><div class="d"><span class="en">Project skill</span><span class="ko">프로젝트 스킬</span></div></div>
+        <div class="row"><div class="k">~/.claude/skills/&lt;name&gt;/SKILL.md</div><div class="d"><span class="en">Personal skill</span><span class="ko">개인 전역 스킬</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">SKILL.md frontmatter / 본문</div>
+        <div class="row"><div class="k">description</div><div class="d"><span class="en">Auto-invocation trigger</span><span class="ko">자동 호출 트리거</span></div></div>
+        <div class="row"><div class="k">allowed-tools</div><div class="d"><span class="en">Pre-approved tools</span><span class="ko">사전 허용 도구</span></div></div>
+        <div class="row"><div class="k">model · effort</div><div class="d"><span class="en">Override per skill</span><span class="ko">스킬 단위 모델·강도</span></div></div>
+        <div class="row"><div class="k">paths: [globs]</div><div class="d"><span class="en">Path-scoped activation</span><span class="ko">특정 경로에만 적용</span></div></div>
+        <div class="row"><div class="k">context: fork</div><div class="d"><span class="en">Run in a subagent</span><span class="ko">서브에이전트에서 실행</span></div></div>
+        <div class="row"><div class="k">$ARGUMENTS · ${CLAUDE_SKILL_DIR}</div><div class="d"><span class="en">Args · skill dir substitution</span><span class="ko">인자·스킬 경로 치환</span></div></div>
+        <div class="row"><div class="k">!`cmd`</div><div class="d"><span class="en">Dynamic context injection</span><span class="ko">동적 컨텍스트 주입(쉘 실행)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">내장 에이전트</div>
+        <div class="row"><div class="k">Explore</div><div class="d"><span class="en">Fast read-only search (Haiku)</span><span class="ko">빠른 읽기 전용 탐색</span></div></div>
+        <div class="row"><div class="k">Plan</div><div class="d"><span class="en">Research for plan mode</span><span class="ko">계획 수립용 리서치</span></div></div>
+        <div class="row"><div class="k">general-purpose</div><div class="d"><span class="en">Full tools, complex tasks</span><span class="ko">전체 도구·복합 작업</span></div></div>
+        <div class="row"><div class="k">claude-code-guide</div><div class="d"><span class="en">Answers Claude Code questions</span><span class="ko">Claude Code 질의응답</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">에이전트 frontmatter</div>
+        <div class="row"><div class="k">permissionMode</div><div class="d"><span class="en">default / acceptEdits / plan / dontAsk / bypassPermissions</span><span class="ko">권한 모드</span></div></div>
+        <div class="row"><div class="k">tools · model</div><div class="d"><span class="en">Allowed tools · model override</span><span class="ko">허용 도구·모델</span></div></div>
+        <div class="row"><div class="k">isolation: worktree</div><div class="d"><span class="en">Run in its own git worktree</span><span class="ko">전용 워크트리에서 실행</span></div></div>
+        <div class="row"><div class="k">background: true</div><div class="d"><span class="en">Run as background task</span><span class="ko">백그라운드 실행</span></div></div>
+        <div class="row"><div class="k">memory: user|project|local</div><div class="d"><span class="en">Persistent learnings across sessions</span><span class="ko">세션 간 지속 메모리</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 메모리 -->
+  <section class="panel" id="t-mem" data-title="메모리 · CLAUDE.md">
+    <p class="panel-intro">CLAUDE.md는 세션 시작 시 컨텍스트에 자동 주입되는 지시 문서입니다.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="sub">CLAUDE.md 위치 (우선순위 ↑)</div>
+        <div class="row"><div class="k">./CLAUDE.md</div><div class="d"><span class="en">Project (team-shared, committed)</span><span class="ko">프로젝트 공유 (커밋)</span></div></div>
+        <div class="row"><div class="k">./CLAUDE.local.md</div><div class="d"><span class="en">Project-local (gitignored)</span><span class="ko">로컬 전용 (VCS 제외)</span></div></div>
+        <div class="row"><div class="k">~/.claude/CLAUDE.md</div><div class="d"><span class="en">Personal (all projects)</span><span class="ko">개인 전역 (모든 프로젝트)</span></div></div>
+        <div class="row"><div class="k">/etc/claude-code/CLAUDE.md</div><div class="d"><span class="en">Managed (org-wide)</span><span class="ko">조직 관리형 (전사)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">규칙 · 임포트</div>
+        <div class="row"><div class="k">.claude/rules/*.md</div><div class="d"><span class="en">Project rules</span><span class="ko">프로젝트 규칙</span></div></div>
+        <div class="row"><div class="k">~/.claude/rules/*.md</div><div class="d"><span class="en">User rules</span><span class="ko">사용자 전역 규칙</span></div></div>
+        <div class="row"><div class="k">paths: (frontmatter)</div><div class="d"><span class="en">Load rule only for matching paths</span><span class="ko">특정 경로에만 적용</span></div></div>
+        <div class="row"><div class="k">@path/to/file</div><div class="d"><span class="en">Import into CLAUDE.md (≤4 hops)</span><span class="ko">CLAUDE.md 내 파일 임포트 (최대 4단계)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">자동 메모리</div>
+        <div class="row"><div class="k">~/.claude/projects/&lt;proj&gt;/memory/</div><div class="d"><span class="en">MEMORY.md + topic files</span><span class="ko">MEMORY.md + 토픽 파일 저장 위치</span></div></div>
+        <div class="row"><div class="k">auto-load</div><div class="d"><span class="en">MEMORY.md loaded each session (~200 lines / 25KB)</span><span class="ko">매 세션 자동 로드 (약 200줄·25KB)</span></div></div>
+        <div class="row"><div class="k">autoMemoryEnabled</div><div class="d"><span class="en">On by default; <code>CLAUDE_CODE_DISABLE_AUTO_MEMORY</code> to disable</span><span class="ko">기본 켜짐 (환경변수로 끄기)</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 설정 -->
+  <section class="panel" id="t-cfg" data-title="설정 · 환경변수">
+    <p class="panel-intro">설정은 JSON 파일로, 동작은 환경변수로 제어합니다.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="sub">설정 파일</div>
+        <div class="row"><div class="k">~/.claude/settings.json</div><div class="d"><span class="en">User settings</span><span class="ko">사용자 전역 설정</span></div></div>
+        <div class="row"><div class="k">.claude/settings.json</div><div class="d"><span class="en">Project (shared)</span><span class="ko">프로젝트 공유 설정</span></div></div>
+        <div class="row"><div class="k">.claude/settings.local.json</div><div class="d"><span class="en">Local only (gitignored)</span><span class="ko">로컬 전용 (VCS 제외)</span></div></div>
+        <div class="row"><div class="k">.mcp.json</div><div class="d"><span class="en">Project MCP servers</span><span class="ko">프로젝트 MCP 서버</span></div></div>
+        <div class="row"><div class="k">managed-settings.d/</div><div class="d"><span class="en">Drop-in policy fragments (macOS/Linux)</span><span class="ko">정책 조각 디렉터리</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">주요 설정 키</div>
+        <div class="row"><div class="k">model · effortLevel</div><div class="d"><span class="en">Default model / effort</span><span class="ko">기본 모델·강도</span></div></div>
+        <div class="row"><div class="k">permissions</div><div class="d"><span class="en">Allow / deny / ask rules</span><span class="ko">허용·거부·확인 규칙</span></div></div>
+        <div class="row"><div class="k">env</div><div class="d"><span class="en">Env vars applied to the session</span><span class="ko">세션 환경변수</span></div></div>
+        <div class="row"><div class="k">hooks</div><div class="d"><span class="en">Event hooks; <code>if</code> = conditional</span><span class="ko">이벤트 훅 (조건부 <code>if</code> 지원)</span></div></div>
+        <div class="row"><div class="k">autoMemoryEnabled</div><div class="d"><span class="en">Toggle auto-memory</span><span class="ko">자동 메모리 토글</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">주요 환경변수</div>
+        <div class="row"><div class="k">ANTHROPIC_API_KEY</div><div class="d"><span class="en">API key (or <code>ANTHROPIC_AUTH_TOKEN</code>)</span><span class="ko">API 인증 키</span></div></div>
+        <div class="row"><div class="k">ANTHROPIC_BASE_URL</div><div class="d"><span class="en">Custom endpoint / proxy</span><span class="ko">커스텀 엔드포인트·프록시</span></div></div>
+        <div class="row"><div class="k">ANTHROPIC_MODEL</div><div class="d"><span class="en">Default model override</span><span class="ko">기본 모델 재정의</span></div></div>
+        <div class="row"><div class="k">CLAUDE_CODE_EFFORT_LEVEL</div><div class="d"><span class="en">low/medium/high/max</span><span class="ko">기본 추론 강도</span></div></div>
+        <div class="row"><div class="k">MAX_THINKING_TOKENS</div><div class="d"><span class="en">Thinking budget (0 = off)</span><span class="ko">최대 사고 토큰 (0=끔)</span></div></div>
+        <div class="row"><div class="k">MCP_TIMEOUT · MCP_TOOL_TIMEOUT</div><div class="d"><span class="en">MCP connect / tool timeouts</span><span class="ko">MCP 연결·툴 타임아웃</span></div></div>
+        <div class="row"><div class="k">ENABLE_TOOL_SEARCH</div><div class="d"><span class="en">Defer MCP tools, search on demand</span><span class="ko">MCP 툴 지연 로드·온디맨드 검색</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MCP -->
+  <section class="panel" id="t-mcp" data-title="MCP · 훅">
+    <p class="panel-intro">MCP는 외부 도구 연결, 훅은 이벤트 시점의 결정론적 자동화.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="sub">MCP Transport</div>
+        <div class="row"><div class="k">http</div><div class="d"><span class="en">Remote streamable HTTP (recommended)</span><span class="ko">원격 HTTP (권장)</span></div></div>
+        <div class="row"><div class="k">stdio</div><div class="d"><span class="en">Local process</span><span class="ko">로컬 프로세스</span></div></div>
+        <div class="row"><div class="k">sse</div><div class="d"><span class="en">Deprecated — use http</span><span class="ko">deprecated (http 사용)</span></div></div>
+        <div class="row"><div class="k">ws</div><div class="d"><span class="en">WebSocket (persistent)</span><span class="ko">웹소켓 (지속 연결)</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">스코프 · 관리</div>
+        <div class="row"><div class="k">Local</div><div class="d"><span class="en">~/.claude.json (you only)</span><span class="ko">개인 전용</span></div></div>
+        <div class="row"><div class="k">Project</div><div class="d"><span class="en">.mcp.json (shared via git)</span><span class="ko">프로젝트 공유</span></div></div>
+        <div class="row"><div class="k">/mcp</div><div class="d"><span class="en">Interactive manager UI</span><span class="ko">대화형 관리 UI</span></div></div>
+        <div class="row"><div class="k">claude mcp add &lt;name&gt; …</div><div class="d"><span class="en">Add server (<code>--transport http</code>, <code>--header</code>, <code>-e</code>)</span><span class="ko">서버 추가 (전송·헤더·환경변수 옵션)</span></div></div>
+        <div class="row"><div class="k">claude mcp list · get · remove</div><div class="d"><span class="en">List · details · remove</span><span class="ko">목록·상세·삭제</span></div></div>
+        <div class="row"><div class="k">claude mcp add-json · serve</div><div class="d"><span class="en">Add via JSON · run CC as an MCP server</span><span class="ko">JSON으로 추가 · CC를 MCP 서버로 실행</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">MCP 제한</div>
+        <div class="row"><div class="k">2KB cap</div><div class="d"><span class="en">Tool desc + server instructions</span><span class="ko">툴 설명·서버 지시문 상한</span></div></div>
+        <div class="row"><div class="k">maxResultSizeChars</div><div class="d"><span class="en"><code>_meta</code> override (up to 500K)</span><span class="ko">결과 크기 상한 재정의(≤500K)</span></div></div>
+        <div class="row"><div class="k">ToolSearch</div><div class="d"><span class="en">Deferred tools, searched on demand</span><span class="ko">지연 로드 후 필요 시 검색</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">훅 이벤트</div>
+        <div class="row"><div class="k">SessionStart · SessionEnd</div><div class="d"><span class="en">Session lifecycle</span><span class="ko">세션 시작·종료</span></div></div>
+        <div class="row"><div class="k">UserPromptSubmit · Stop</div><div class="d"><span class="en">Turn lifecycle</span><span class="ko">프롬프트 제출·턴 종료</span></div></div>
+        <div class="row"><div class="k">PreToolUse · PostToolUse</div><div class="d"><span class="en">Around tool calls</span><span class="ko">도구 호출 전·후</span></div></div>
+        <div class="row"><div class="k">SubagentStart · SubagentStop</div><div class="d"><span class="en">Subagent lifecycle</span><span class="ko">서브에이전트 시작·종료</span></div></div>
+        <div class="row"><div class="k">PermissionDenied</div><div class="d"><span class="en">On auto-mode denial</span><span class="ko">권한 거부 시</span></div></div>
+      </div>
+      <div class="card">
+        <div class="sub">훅 종료 코드</div>
+        <div class="row"><div class="k">exit 0</div><div class="d"><span class="en">Success</span><span class="ko">성공</span></div></div>
+        <div class="row"><div class="k">exit 2</div><div class="d"><span class="en">Block — stderr fed back to Claude</span><span class="ko">차단 (stderr를 Claude에 전달)</span></div></div>
+        <div class="row"><div class="k">기타</div><div class="d"><span class="en">Non-blocking error</span><span class="ko">비차단 오류 (계속 진행)</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="legend">표기: 각 행은 영어 원문 + 한국어 설명. 상단 버튼으로 한국어 설명을 켜고 끌 수 있습니다.</div>
+    <div>버전별 세부 기능·정확한 가용성은 시점에 따라 달라질 수 있으니 1차 출처를 확인하세요.</div>
+    <div class="src">
+      <span>1차 출처:</span>
+      <a href="https://code.claude.com/docs/en/overview" target="_blank" rel="noopener">code.claude.com/docs</a>
+      <a href="https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md" target="_blank" rel="noopener">GitHub CHANGELOG.md</a>
+      <a href="https://code.claude.com/docs/en/changelog" target="_blank" rel="noopener">공식 Docs Changelog</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // 탭 전환
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach((t) => {
+    t.addEventListener('click', () => {
+      tabs.forEach((x) => x.classList.remove('on'));
+      panels.forEach((p) => p.classList.remove('on'));
+      t.classList.add('on');
+      document.getElementById('t-' + t.dataset.t).classList.add('on');
+    });
+  });
+
+  // 한국어 설명 토글
+  const koBtn = document.getElementById('koBtn');
+  koBtn.addEventListener('click', () => {
+    const hidden = document.body.classList.toggle('ko-hidden');
+    koBtn.textContent = '한국어 설명: ' + (hidden ? '꺼짐' : '켜짐');
+  });
+</script>
+</body>
+</html>

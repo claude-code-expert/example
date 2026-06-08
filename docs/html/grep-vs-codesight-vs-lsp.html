@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>grep vs codesight vs LSP — 토큰 효율 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FCFCFB; --ink:#1A1A1A; --mut:#6B6B6B; --line:#E2E2DF;
+    --panel:#F6F6F4; --accent:#B45309;
+    --sans:'IBM Plex Sans KR',sans-serif; --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:56px 24px 72px;}
+  header{border-bottom:1px solid var(--line); padding-bottom:24px; margin-bottom:40px;}
+  h1{font-size:26px; font-weight:700; letter-spacing:-0.01em; margin:0 0 8px;}
+  .sub{color:var(--mut); font-size:15px; margin:0;}
+  .note{color:var(--mut); font-size:12.5px; margin-top:14px; font-family:var(--mono);}
+  h2{font-size:18px; font-weight:600; margin:48px 0 16px; letter-spacing:-0.01em;}
+  h2 .idx{font-family:var(--mono); color:var(--accent); font-weight:600; margin-right:8px;}
+  p{margin:0 0 12px;}
+  .lead{color:var(--mut);}
+
+  /* diagram */
+  .diagram{border:1px solid var(--line); border-radius:8px; padding:20px 16px; background:#fff;}
+  .diagram svg{display:block; width:100%; height:auto;}
+
+  /* table */
+  table{width:100%; border-collapse:collapse; font-size:14px; margin-top:4px;}
+  th,td{border:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top;}
+  thead th{background:var(--panel); font-weight:600;}
+  tbody th{background:var(--panel); font-weight:500; color:var(--mut); width:150px;}
+  td.num{font-family:var(--mono); white-space:nowrap;}
+  .accent{color:var(--accent); font-weight:600;}
+
+  /* assumptions */
+  .box{border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px 18px; font-size:14px;}
+  .box dl{margin:0; display:grid; grid-template-columns:128px 1fr; gap:6px 16px;}
+  .box dt{color:var(--mut);}
+  .box dd{margin:0;}
+  .box dd code{font-family:var(--mono); font-size:13px;}
+
+  /* bars */
+  .bars{margin-top:20px;}
+  .bar-row{display:grid; grid-template-columns:96px 1fr; align-items:center; gap:14px; margin-bottom:14px;}
+  .bar-label{font-family:var(--mono); font-size:13px; text-align:right;}
+  .bar-track{display:flex; align-items:center; gap:10px;}
+  .bar{height:22px; background:#3A3A38; border-radius:3px;}
+  .bar.lite{background:#C7C7C2;}
+  .bar-val{font-family:var(--mono); font-size:13px; white-space:nowrap;}
+  .save{font-family:var(--mono); font-size:12.5px; color:var(--accent); white-space:nowrap;}
+
+  footer{margin-top:48px; border-top:1px solid var(--line); padding-top:20px; color:var(--mut); font-size:13px;}
+  footer strong{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>grep vs codesight vs LSP — 토큰 효율 비교</h1>
+    <p class="sub">코드 검색 방식 3종의 동작 원리와 추정 토큰 비용을 한 페이지로 정리</p>
+    <p class="note">타이포: IBM Plex — 기술 문서용으로 설계돼 작은 크기에서 또렷하고, 한글(Sans KR)·코드(Mono)가 한 가족이라 선택.</p>
+  </header>
+
+  <h2><span class="idx">01</span>동작 방식</h2>
+  <p class="lead">핵심 차이는 둘. grep은 매번 전체를 다시 훑고 <em>글자</em>를 맞춘다. codesight·LSP는 한 번 만든 정보를 재사용하고 <em>구조·의미</em>로 찾는다.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 860 400" role="img" xmlns="http://www.w3.org/2000/svg">
+      <title>grep, codesight, LSP의 동작 방식 비교 다이어그램</title>
+      <desc>grep은 매 검색마다 100개 파일을 전수 스캔해 노이즈 섞인 결과를 내고, codesight는 최초 1회 색인을 만들어 캐시처럼 조회하며, LSP는 언어서버가 코드 의미를 이해해 정확한 참조만 반환한다.</desc>
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#9A9A96" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <style>
+        .node{fill:#F6F6F4; stroke:#DDDDD9; stroke-width:1;}
+        .bx{font-family:'IBM Plex Sans KR',sans-serif; font-size:12px; fill:#1A1A1A;}
+        .mut{font-family:'IBM Plex Sans KR',sans-serif; font-size:11px; fill:#6B6B6B;}
+        .tag{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; fill:#1A1A1A;}
+        .lbl{font-family:'IBM Plex Sans KR',sans-serif; font-size:11px; fill:#6B6B6B;}
+        .tok{font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; fill:#B45309;}
+        .toku{font-family:'IBM Plex Sans KR',sans-serif; font-size:11px; fill:#6B6B6B;}
+        .arr{stroke:#9A9A96; stroke-width:1.2;}
+      </style>
+
+      <!-- divider lines between lanes -->
+      <line x1="0" y1="138" x2="860" y2="138" stroke="#EDEDEA" stroke-width="1"/>
+      <line x1="0" y1="268" x2="860" y2="268" stroke="#EDEDEA" stroke-width="1"/>
+
+      <!-- LANE 1: grep -->
+      <text class="tag" x="8" y="84">grep</text>
+      <rect class="node" x="78" y="56" width="104" height="48" rx="6"/>
+      <text class="bx" x="130" y="76" text-anchor="middle">질의</text>
+      <text class="mut" x="130" y="92" text-anchor="middle">키워드</text>
+      <line class="arr" x1="184" y1="80" x2="212" y2="80" marker-end="url(#ah)"/>
+      <rect class="node" x="214" y="56" width="150" height="48" rx="6"/>
+      <text class="bx" x="289" y="76" text-anchor="middle">파일 100개 전수 스캔</text>
+      <text class="mut" x="289" y="92" text-anchor="middle">매 검색마다 처음부터</text>
+      <line class="arr" x1="366" y1="80" x2="394" y2="80" marker-end="url(#ah)"/>
+      <rect class="node" x="396" y="56" width="150" height="48" rx="6"/>
+      <text class="bx" x="471" y="76" text-anchor="middle">결과 + 노이즈</text>
+      <text class="mut" x="471" y="92" text-anchor="middle">주석·유사이름 포함</text>
+      <!-- repeat arc -->
+      <path d="M471 54 C 471 30, 289 30, 289 54" fill="none" class="arr" marker-end="url(#ah)"/>
+      <text class="lbl" x="380" y="26" text-anchor="middle">매 검색마다 전체 반복</text>
+      <text class="tok" x="600" y="76">≈ 3,500</text>
+      <text class="toku" x="600" y="93">토큰 / 조회</text>
+
+      <!-- LANE 2: codesight -->
+      <text class="tag" x="8" y="214">codesight</text>
+      <rect class="node" x="78" y="186" width="96" height="48" rx="6"/>
+      <text class="bx" x="126" y="214" text-anchor="middle">파일 100개</text>
+      <line class="arr" x1="176" y1="210" x2="204" y2="210" marker-end="url(#ah)"/>
+      <text class="lbl" x="190" y="178" text-anchor="middle">최초 1회</text>
+      <!-- cache stacked box -->
+      <rect class="node" x="210" y="190" width="146" height="48" rx="6"/>
+      <rect class="node" x="206" y="186" width="146" height="48" rx="6"/>
+      <text class="bx" x="279" y="206" text-anchor="middle">색인 빌드 (캐시)</text>
+      <text class="mut" x="279" y="222" text-anchor="middle">key → 위치 저장</text>
+      <line class="arr" x1="358" y1="210" x2="386" y2="210" marker-end="url(#ah)"/>
+      <text class="lbl" x="372" y="178" text-anchor="middle">이후 조회</text>
+      <rect class="node" x="388" y="186" width="158" height="48" rx="6"/>
+      <text class="bx" x="467" y="206" text-anchor="middle">지도 조회</text>
+      <text class="mut" x="467" y="222" text-anchor="middle">정확한 위치 반환</text>
+      <text class="tok" x="600" y="202">≈ 250</text>
+      <text class="toku" x="600" y="219">토큰 / 조회</text>
+      <text class="toku" x="600" y="234">+ 빌드 1회 ≈ 1,200</text>
+
+      <!-- LANE 3: lsp -->
+      <text class="tag" x="8" y="344">lsp</text>
+      <text class="mut" x="8" y="360">cclsp</text>
+      <rect class="node" x="78" y="316" width="96" height="48" rx="6"/>
+      <text class="bx" x="126" y="344" text-anchor="middle">질의</text>
+      <line class="arr" x1="176" y1="340" x2="204" y2="340" marker-end="url(#ah)"/>
+      <rect class="node" x="206" y="316" width="150" height="48" rx="6"/>
+      <text class="bx" x="281" y="336" text-anchor="middle">언어서버</text>
+      <text class="mut" x="281" y="352" text-anchor="middle">코드 의미 이해</text>
+      <line class="arr" x1="358" y1="340" x2="386" y2="340" marker-end="url(#ah)"/>
+      <rect class="node" x="388" y="316" width="158" height="48" rx="6"/>
+      <text class="bx" x="467" y="336" text-anchor="middle">정확한 참조만</text>
+      <text class="mut" x="467" y="352" text-anchor="middle">정의 · 참조 위치</text>
+      <text class="tok" x="600" y="336">≈ 500</text>
+      <text class="toku" x="600" y="353">토큰 / 조회</text>
+    </svg>
+  </div>
+
+  <h2><span class="idx">02</span>비교표</h2>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>grep</th><th>codesight</th><th>LSP (cclsp)</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>탐색 방식</th><td>매번 전수 스캔</td><td>최초 1회 색인 후 조회</td><td>의미 기반 쿼리</td></tr>
+      <tr><th>이해 수준</th><td>글자 매칭</td><td>구조 (파일·심볼 지도)</td><td>의미 (컴파일러 수준)</td></tr>
+      <tr><th>반복 비용</th><td>매번 전체 재탐색</td><td>색인 재사용 (거의 0)</td><td>쿼리당 경량</td></tr>
+      <tr><th>결과 정확도</th><td>노이즈 많음</td><td>구조적으로 정확</td><td>정확한 참조만</td></tr>
+      <tr><th>최초 비용</th><td>없음</td><td>색인 1회 빌드</td><td>언어서버 워밍업</td></tr>
+      <tr><th>적합 상황</th><td>일회성 · 소규모</td><td>대형 · 반복 탐색</td><td>정확한 참조 · 진단</td></tr>
+      <tr><th>1회 조회 추정 토큰</th><td class="num">~3,500</td><td class="num">~250 <span class="accent">(+빌드 ~1,200)</span></td><td class="num">~500</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="idx">03</span>토큰 효율 추정</h2>
+  <div class="box">
+    <dl>
+      <dt>시나리오</dt><dd>특정 심볼(예: 함수명) 1개의 <strong>정의 + 호출처</strong> 찾기</dd>
+      <dt>코드베이스</dt><dd>파일 100개, 약 50MB <span style="color:var(--mut)">(전체를 다 읽으면 ≈ 1,200만 토큰 상당)</span></dd>
+      <dt>세션 가정</dt><dd>같은 류 탐색을 <strong>5회</strong> 반복 (에이전트 탐색)</dd>
+      <dt>측정 기준</dt><dd>LLM <strong>컨텍스트에 실제로 들어오는</strong> 토큰 (grep 자체 CPU 비용 아님)</dd>
+    </dl>
+  </div>
+
+  <p style="margin-top:20px; font-size:14px; color:var(--mut);">세션 5회 누적 토큰 (낮을수록 효율적)</p>
+  <div class="bars">
+    <div class="bar-row">
+      <div class="bar-label">grep</div>
+      <div class="bar-track">
+        <div class="bar" style="width:100%"></div>
+        <span class="bar-val">17,500</span>
+      </div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">codesight</div>
+      <div class="bar-track">
+        <div class="bar lite" style="width:14%"></div>
+        <span class="bar-val">2,450</span>
+        <span class="save">≈ 7× ↓</span>
+      </div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">lsp</div>
+      <div class="bar-track">
+        <div class="bar lite" style="width:14.3%"></div>
+        <span class="bar-val">2,500</span>
+        <span class="save">≈ 7× ↓</span>
+      </div>
+    </div>
+  </div>
+
+  <table style="margin-top:24px;">
+    <thead>
+      <tr><th>방식</th><th>1회 조회</th><th>5회 누적</th><th>grep 대비</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>grep</th><td class="num">~3,500</td><td class="num">~17,500</td><td>기준</td></tr>
+      <tr><th>codesight</th><td class="num">~250</td><td class="num">~2,450 <span style="color:var(--mut)">(빌드 1,200 + 조회 5×250)</span></td><td class="num accent">≈ 7× ↓</td></tr>
+      <tr><th>lsp</th><td class="num">~500</td><td class="num">~2,500</td><td class="num accent">≈ 7× ↓</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:18px; font-size:14px; color:var(--mut);">단발(1회)만 보면 빌드 비용이 없는 <strong style="color:var(--ink)">LSP가 codesight보다 유리</strong>하지만, 반복할수록 codesight는 색인을 재사용해 둘 다 비슷하게 수렴한다. carve가 둘을 함께 까는 이유 — 구조 지도(codesight) + 정밀 참조(LSP)로 상호 보완.</p>
+
+  <footer>
+    <p><strong>추정 모델 · 측정값 아님.</strong> 위 수치는 명시한 가정에 기반한 개략 계산이며, 실제 값은 키워드 빈도 · 파일 크기 분포 · 에이전트 탐색 전략에 따라 크게 달라진다. 정확한 비교는 동일 태스크를 각 방식으로 실행하는 실측이 필요하다.</p>
+    <p>방향성은 carve-harness README의 실측 예시와 일치 — 한 번의 참조 검색에서 grep 약 2,000+ 토큰이 LSP로는 약 500 토큰, 대형 코드베이스 탐색에서 평균 약 11배 절감.</p>
+  </footer>
+
+</div>
+</body>
+</html>

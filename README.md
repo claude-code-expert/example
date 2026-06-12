@@ -1,10 +1,9 @@
 # [Claude Code Expert](https://github.com/claude-code-expert) 서적의 예제 문서 모음
 
-> 📘 [github.com/claude-code-expert](https://github.com/claude-code-expert) — 클로드 코드 마스터 (한빛미디어 서적 공식 리포지토리) <br>  
-> [AI 개발자 정보 공유 커뮤니티 run-ai.kr](https://run-ai.kr)<br>
+> [run-ai.kr](https://run-ai.kr) — AI 개발자 정보 공유 커뮤니티 <br>
+> 📘 [github.com/claude-code-expert](https://github.com/claude-code-expert) — 클로드 코드 마스터 (한빛미디어 서적 공식 리포지토리)  <br>
 > ☕ [www.brewnet.dev](https://www.brewnet.dev) — 셀프 호스팅 홈서버 자동 구축 오픈소스 <br>
-> [개발에 필수적인 요소만 최소한으로 구성하는, 개발자를 위한 하네스 엔지니어링 도구](https://github.com/claude-code-expert/carve-harness)
-
+> [carve-harness](https://github.com/claude-code-expert/carve-harness) — 개발에 필수적인 요소만 최소한으로 구성하는, 개발자를 위한 하네스 엔지니어링 도구<br>
 > 한빛미디어 | 2026.04.15 출간
 
 ## 저자

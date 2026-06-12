@@ -360,11 +360,16 @@ body {
     </div>
   </header>
 
+  <!-- UPDATE BANNER -->
+  <div style="background:#eef4fb;border:1px solid var(--infra-accent);border-left:4px solid var(--infra-accent);border-radius:4px;padding:10px 18px;margin-bottom:16px;font-size:0.78rem;color:var(--ink2);">
+    📌 2026-06-12: AGENT_TRIGGERS·MONITOR_TOOL·BUDDY 등 일부 기능이 이후 정식 출시됨 — 최신 갱신 내역은 Markdown 원본(claude-code-unshipped.md) 참조
+  </div>
+
   <!-- WARNING -->
   <div class="warn-banner">
     <span class="wi">⚠️</span>
     <div>
-      <strong>유출 경위:</strong> 2026년 3월 31일, 보안 연구자 Chaofan Shou가 Claude Code npm 패키지(v2.1.88)에 <code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">.npmignore</code>에서 제외되지 않은 소스맵 파일(<code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">main.js.map</code>)을 발견, Anthropic R2 버킷에서 <code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">src.zip</code>을 직접 다운로드. 512,000줄 TypeScript 소스코드 전체가 노출됨. Anthropic이 유출 사실을 공식 확인. <strong>이미지 출처: npm 유출 소스 분석 기반 커뮤니티 시각화 자료</strong>  Anthropic 공식 발표 아님 — 교육·리서치 참고용.
+      <strong>유출 경위:</strong> 2026년 3월 31일, 보안 연구자 Chaofan Shou가 Claude Code npm 패키지(v2.1.88)에 <code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">.npmignore</code>에서 제외되지 않은 소스맵 파일(<code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">main.js.map</code>)을 발견, Anthropic R2 버킷에서 <code style="background:#fde68a;padding:1px 4px;border-radius:2px;font-family:var(--font-mono);font-size:0.72rem;">src.zip</code>을 직접 다운로드. 512,000줄 TypeScript 소스코드 전체가 노출됨. Anthropic이 유출 사실을 공식 확인. <strong>이미지 출처: npm 유출 소스 분석 기반 커뮤니티 시각화 자료</strong> (cc.storyfox.cz와 무관). Anthropic 공식 발표 아님 — 교육·리서치 참고용.
     </div>
   </div>
 
@@ -392,7 +397,7 @@ body {
     </div>
     <div class="tl-item">
       <div class="tl-label" style="color:var(--unk-accent);">● UNKNOWN / INTERNAL</div>
-      <div class="tl-count" style="color:var(--unk-accent);">3</div>
+      <div class="tl-count" style="color:var(--unk-accent);">3+1</div>
       <div class="tl-desc">플래그 존재·미연결 상태<br>Anthropic 내부 전용 툴 포함</div>
     </div>
   </div>

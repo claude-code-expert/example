@@ -15,53 +15,63 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
 
 > **⚠️ 포맷 주의 (2025년 이후 버전)**
 > 각 훅 항목은 `hook` (단수 객체)가 아니라 `hooks` **(복수 배열)**을 사용해야 합니다.
-> 잘못된 포맷은 `claude config list` 실행 시 `Settings Error`가 발생하며 해당 파일 전체가 무시됩니다.
+> 잘못된 포맷은 `Settings Error`가 발생하며 해당 파일 전체가 무시됩니다. 등록된 훅과 상태는 세션 내에서 `/hooks` 메뉴를 입력해 확인하세요.
 
 ---
 
-### Hook 타이밍
+### 주요 Hook 이벤트
 
-| 타이밍         | 설명                    | 용도                            |
+| 이벤트         | 설명                    | 용도                            |
 | -------------- | ----------------------- | ------------------------------- |
 | `PreToolUse`   | 도구 실행 **전**        | 실행 차단, 사전 검증, 자동 백업 |
 | `PostToolUse`  | 도구 실행 **후**        | 린트, 포맷팅, 자동 수정         |
 | `Notification` | Claude가 알림을 보낼 때 | 데스크탑 알림, 슬랙 연동        |
 | `Stop`         | 전체 응답 완료 시       | 타입 체크, 빌드 검증, 테스트    |
 
+> 이 외에도 `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `PreCompact`, `PostCompact`, `SubagentStart`, `SubagentStop`, `PermissionRequest` 등 다수의 이벤트가 있습니다(v2.1.x 기준 27종 이상). 전체 목록은 공식 문서를 참조하세요.
+
 ---
 
-### 사용 가능한 환경변수
+### stdin JSON 입력
 
-| 변수                 | 설명                                           | 주요 사용 타이밍        |
-| -------------------- | ---------------------------------------------- | ----------------------- |
-| `$CLAUDE_FILE_PATH`  | 수정된 파일의 절대 경로                        | PostToolUse, PreToolUse |
-| `$CLAUDE_TOOL_NAME`  | 실행된 도구 이름 (예: `Write`, `Edit`, `Bash`) | 모든 타이밍             |
-| `$CLAUDE_TOOL_INPUT` | 도구에 전달된 입력 JSON (문자열)               | PreToolUse, PostToolUse |
+훅 명령은 환경변수가 아니라 **stdin으로 JSON**을 전달받습니다. `jq`로 필요한 값을 추출해 사용합니다.
+
+```json
+{
+  "session_id": "abc123",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/absolute/path/to/file.ts"
+  }
+}
+```
+
+- `tool_input`의 내용은 도구마다 다릅니다. `Write`/`Edit`는 `file_path`, `Bash`는 `command` 필드를 갖습니다.
+
+```bash
+# 예시: 수정된 파일 경로 추출
+f=$(jq -r '.tool_input.file_path')
+```
+
+> 공식적으로 제공되는 환경변수는 `$CLAUDE_PROJECT_DIR`(프로젝트 루트 절대경로)입니다.
+> `$CLAUDE_FILE_PATH`, `$CLAUDE_TOOL_NAME`, `$CLAUDE_TOOL_INPUT` 같은 환경변수는 존재하지 않습니다.
 
 ---
 
 ### matcher 규칙
 
-두 가지 형식을 지원합니다.
-
-**① 문자열 패턴 (정규식)**
-
-도구 내부 이름을 정규식으로 매칭합니다.
+matcher는 **문자열만** 지원하며, PascalCase 공식 도구명을 사용해야 합니다.
 
 ```
-"matcher": "write_file|edit_file|multiedit_file"   // 파일 수정 도구만
-"matcher": "bash"                                   // Bash 도구만
-"matcher": ""                                       // 모든 도구 (항상 실행)
+"matcher": "Bash"               // 정확한 도구명 하나
+"matcher": "Write|Edit"         // |로 복수 도구 지정
+"matcher": "mcp__memory__.*"    // 정규식 패턴 (MCP 도구 등)
+"matcher": "*"                  // 모든 도구 매칭
+"matcher": ""                   // 빈 문자열 = 모든 도구 매칭 (항상 실행)
 ```
 
-**② 객체 형식 (tools 배열)**
-
-```json
-"matcher": { "tools": ["BashTool"] }
-```
-
-> `claude config list`의 에러 메시지 예시에서 확인된 공식 포맷입니다.
-> 복수 도구 지정이나 더 명확한 매칭이 필요할 때 사용합니다.
+> `{ "tools": ["BashTool"] }` 같은 객체 형식은 지원하지 않습니다.
+> 정확한 도구명, `|` 목록(`Edit|Write`), 정규식(`mcp__memory__.*` 등), `*` 또는 빈 문자열(전체 매칭)만 사용할 수 있습니다.
 
 ---
 
@@ -70,7 +80,7 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
 ```jsonc
 // ❌ 잘못된 포맷 (구버전 — 현재 에러 발생)
 {
-  "matcher": "write_file|edit_file",
+  "matcher": "Write|Edit",
   "hook": {                          // 단수 객체 → 인식 안 됨
     "type": "command",
     "command": "echo done"
@@ -79,7 +89,7 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
 
 // ✅ 올바른 포맷 (현재 버전)
 {
-  "matcher": "write_file|edit_file",
+  "matcher": "Write|Edit",
   "hooks": [                         // 복수 배열
     {
       "type": "command",
@@ -92,6 +102,8 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
 ---
 
 ## 전체 설정 예시
+
+> ⚠️ 아래 예시의 주석(//)과 트레일링 콤마는 설명용이다. 실제 settings.json은 엄격한 JSON만 허용하므로 복사 시 반드시 제거할 것.
 
 ```jsonc
 {
@@ -129,11 +141,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
     "PreToolUse": [
       // 1) 파일 수정 전 자동 백업
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f \"$CLAUDE_FILE_PATH\" ]; then cp \"$CLAUDE_FILE_PATH\" \"$CLAUDE_FILE_PATH.bak\" 2>/dev/null; fi || true",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); [ -n \"$f\" ] && [ -f \"$f\" ] && cp \"$f\" \"$f.bak\" 2>/dev/null || true",
           },
         ],
       },
@@ -141,11 +153,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
       // 2) 보호 파일 수정 차단 (.env, lock 파일 등)
       //    - exit 2를 반환하면 도구 실행이 차단됨
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "case \"$CLAUDE_FILE_PATH\" in *.env|*.env.*|*.lock|package-lock.json|pnpm-lock.yaml) echo '⛔ 보호된 파일입니다: '$CLAUDE_FILE_PATH; exit 2;; esac || true",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); case \"$f\" in *.env|*.env.*|*.lock|*package-lock.json|*pnpm-lock.yaml) echo '⛔ 보호된 파일입니다: '$f >&2; exit 2;; esac",
           },
         ],
       },
@@ -158,11 +170,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
       // 3) ESLint 자동 수정
       //    - 파일 수정 후 즉시 린트 + 자동 수정 적용
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "npx eslint --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null || true",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); [ -n \"$f\" ] && npx eslint --fix \"$f\" 2>/dev/null || true",
           },
         ],
       },
@@ -170,11 +182,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
       // 4) Prettier 자동 포맷팅
       //    - 코드 스타일 자동 정리
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); [ -n \"$f\" ] && npx prettier --write \"$f\" 2>/dev/null || true",
           },
         ],
       },
@@ -182,11 +194,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
       // 5) Prisma 스키마 변경 시 자동 생성
       //    - schema.prisma 수정 후 prisma generate 자동 실행
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -q 'schema.prisma'; then npx prisma generate 2>/dev/null; fi || true",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); if echo \"$f\" | grep -q 'schema.prisma'; then npx prisma generate 2>/dev/null; fi || true",
           },
         ],
       },
@@ -194,11 +206,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
       // 6) Tailwind CSS 클래스 자동 정렬
       //    - TSX/JSX 파일 수정 시 Tailwind 클래스 순서 정리
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(tsx|jsx)$'; then npx prettier --plugin prettier-plugin-tailwindcss --write \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi || true",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); if echo \"$f\" | grep -qE '\\.(tsx|jsx)$'; then npx prettier --plugin prettier-plugin-tailwindcss --write \"$f\" 2>/dev/null; fi || true",
           },
         ],
       },
@@ -206,11 +218,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
       // 7) 수정된 파일 자동 Git 스테이징
       //    - 수정 사항을 바로 스테이징 (커밋은 수동)
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "git add \"$CLAUDE_FILE_PATH\" 2>/dev/null || true",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); [ -n \"$f\" ] && git add \"$f\" 2>/dev/null || true",
           },
         ],
       },
@@ -222,13 +234,13 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
     "Stop": [
       // 8) TypeScript 타입 체크
       //    - 전체 프로젝트의 타입 오류 확인
-      //    - 오류가 있으면 Claude가 인식하고 다음 턴에서 수정 시도
+      //    - 타입 에러 발생 시 exit 2 + stderr로 에러 내용을 Claude에게 전달 (수정 유도)
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "npx tsc --noEmit 2>&1 | tail -30",
+            "command": "npx tsc --noEmit > /tmp/tsc-out.txt 2>&1 || { tail -20 /tmp/tsc-out.txt >&2; exit 2; }",
           },
         ],
       },
@@ -263,13 +275,13 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
     // ─────────────────────────────────────
     "Notification": [
       // 11) macOS 데스크탑 알림
-      //     - 긴 작업 중 Claude 응답 완료 시 알림
+      //     - 권한 승인 대기, 유휴(입력 대기) 상태 등 Claude가 알림을 보낼 때 표시
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "osascript -e 'display notification \"Claude Code 작업이 완료되었습니다\" with title \"Claude Code\"' 2>/dev/null || true",
+            "command": "osascript -e 'display notification \"Claude Code가 입력을 기다리고 있습니다\" with title \"Claude Code\"' 2>/dev/null || true",
           },
         ],
       },
@@ -289,20 +301,20 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "npx eslint --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null; npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null || true"
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); [ -n \"$f\" ] && { npx eslint --fix \"$f\" 2>/dev/null; npx prettier --write \"$f\" 2>/dev/null; } || true"
           }
         ]
       },
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -q 'schema.prisma'; then npx prisma generate 2>/dev/null && npx prisma validate 2>/dev/null; fi || true"
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); if echo \"$f\" | grep -q 'schema.prisma'; then npx prisma generate 2>/dev/null && npx prisma validate 2>/dev/null; fi || true"
           }
         ]
       }
@@ -329,11 +341,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(kt|java)$'; then ./gradlew spotlessApply 2>/dev/null; fi || true"
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); if echo \"$f\" | grep -qE '\\.(kt|java)$'; then ./gradlew spotlessApply 2>/dev/null; fi || true"
           }
         ]
       }
@@ -369,11 +381,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "write_file|edit_file|multiedit_file",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.py$'; then ruff check --fix \"$CLAUDE_FILE_PATH\" 2>/dev/null && ruff format \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi || true"
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); if echo \"$f\" | grep -qE '\\.py$'; then ruff check --fix \"$f\" 2>/dev/null && ruff format \"$f\" 2>/dev/null; fi || true"
           }
         ]
       }
@@ -408,11 +420,11 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
 
 ### exit 코드 규칙
 
-| exit 코드 | 동작                                        |
-| --------- | ------------------------------------------- |
-| `0`       | 성공, 정상 진행                             |
-| `1`       | 오류 출력이 Claude에게 전달됨 (수정 유도)   |
-| `2`       | **도구 실행 자체를 차단** (PreToolUse 전용) |
+| exit 코드            | 동작                                                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `0`                  | 성공, 정상 진행                                                                                                        |
+| `1` 등 기타 non-zero | 비차단 오류 — stderr는 사용자에게만 표시되고 실행은 계속됨 (Claude에게 전달되지 않음)                                   |
+| `2`                  | **차단 오류** — stderr가 Claude에게 전달됨. PreToolUse에서는 도구 실행을 차단하며, Stop·PostToolUse 등에서도 차단 의미로 동작 |
 
 ### 성능 고려사항
 
@@ -423,12 +435,13 @@ Claude Code의 Hooks는 특정 이벤트 시점에 자동으로 명령어를 실
 
 ### 디버깅
 
-```bash
-# 훅 설정 및 유효성 확인
-claude config list
+- **`/hooks` 메뉴 (권장)**: 세션 내에서 `/hooks`를 입력하면 등록된 훅과 상태를 확인할 수 있습니다.
+- **직접 테스트**: 훅 명령의 stdin에 샘플 JSON을 넣어 수동으로 실행해 봅니다.
 
-# 특정 훅 명령어를 직접 테스트
-CLAUDE_FILE_PATH="src/index.ts" npx eslint --fix "$CLAUDE_FILE_PATH"
+```bash
+# 훅 명령을 stdin 샘플 JSON으로 직접 테스트
+echo '{"tool_name":"Edit","tool_input":{"file_path":"src/index.ts"}}' \
+  | sh -c 'f=$(jq -r ".tool_input.file_path"); npx eslint --fix "$f"'
 ```
 
 ### 흔한 실수
@@ -437,4 +450,4 @@ CLAUDE_FILE_PATH="src/index.ts" npx eslint --fix "$CLAUDE_FILE_PATH"
 | ----------------------------------------- | ----------------------------------------- | ---------------------------------------- |
 | Settings Error — `hooks: Expected array`  | `hook` (단수) 사용                        | `hooks: [...]` (복수 배열)로 변경        |
 | Settings Error — `$schema: Invalid value` | `$schema`가 빈 문자열                     | 올바른 URL로 교체하거나 키 자체를 삭제   |
-| 훅 파일 전체 무시                         | 위 에러 중 하나라도 있으면 파일 전체 스킵 | `claude config list`로 에러 확인 후 수정 |
+| 훅 파일 전체 무시                         | 위 에러 중 하나라도 있으면 파일 전체 스킵 | `/hooks` 메뉴로 에러 확인 후 수정        |

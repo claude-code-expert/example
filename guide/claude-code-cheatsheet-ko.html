@@ -338,6 +338,9 @@
     </div>
   </header>
 
+  <!-- ARCHIVE BANNER -->
+  <div style="margin-bottom:8px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;color:var(--muted);">📌 이 문서는 v2.1.91 (2026-04) 기준 아카이브입니다. 최신 탭형 버전: <a href="https://claude-code-expert.github.io/example/docs/html/claude-code-cheatsheet-ko.html" style="color:#58a6ff;text-decoration:none;">claude-code-cheatsheet-ko (2026-06)</a></div>
+
   <!-- VERIFICATION BANNER -->
   <div class="verify-banner">
     <span class="v-label">🔍 검증 결과</span>
@@ -603,7 +606,7 @@
           <div class="row"><div class="key">/config</div><div class="desc-wrap"><div class="desc-en">Open settings</div><div class="desc-ko">설정 열기</div></div></div>
           <div class="row"><div class="key">/model [model]</div><div class="desc-wrap"><div class="desc-en">Switch model</div><div class="desc-ko">모델 전환 (←→ 으로 effort 조정)</div></div></div>
           <div class="row"><div class="key">/effort [level]</div><div class="desc-wrap"><div class="desc-en">low / medium / high / max / auto</div><div class="desc-ko">추론 강도 설정 (○낮음 · ◐중간 · ●높음 · ★최대)</div></div></div>
-          <div class="row"><div class="key">/vim</div><div class="desc-wrap"><div class="desc-en">Toggle vim mode</div><div class="desc-ko">vim 키바인딩 모드 토글</div></div></div>
+          <div class="row"><div class="key">/vim</div><div class="desc-wrap"><div class="desc-en">Toggle vim mode</div><div class="desc-ko">vim 키바인딩 모드 토글 (v2.1.92에서 /config Editor mode로 이동)</div></div></div>
           <div class="row"><div class="key">/theme</div><div class="desc-wrap"><div class="desc-en">Change color theme</div><div class="desc-ko">컬러 테마 변경</div></div></div>
           <div class="row"><div class="key">/permissions</div><div class="desc-wrap"><div class="desc-en">View/update permissions</div><div class="desc-ko">권한 확인·수정 (Recent 탭에서 r로 retry)</div></div></div>
 
@@ -621,7 +624,7 @@
           <div class="row"><div class="key">/plan [desc]</div><div class="desc-wrap"><div class="desc-en">Plan mode</div><div class="desc-ko">읽기 전용 계획 수립 모드</div></div></div>
           <div class="row"><div class="key">/voice</div><div class="desc-wrap"><div class="desc-en">Push-to-talk voice (20 langs)</div><div class="desc-ko">푸시투토크 음성 입력 (20개 언어 지원)</div></div></div>
           <div class="row"><div class="key">/security-review</div><div class="desc-wrap"><div class="desc-en">Security analysis of changes</div><div class="desc-ko">변경사항 보안 분석</div></div></div>
-          <div class="row"><div class="key">/pr-comments</div><div class="desc-wrap"><div class="desc-en">Fetch GitHub PR comments</div><div class="desc-ko">GitHub PR 코멘트 불러오기</div></div></div>
+          <div class="row"><div class="key">/pr-comments</div><div class="desc-wrap"><div class="desc-en">Fetch GitHub PR comments</div><div class="desc-ko">GitHub PR 코멘트 불러오기 (v2.1.91에서 제거됨)</div></div></div>
         </div>
       </div>
 
@@ -676,7 +679,7 @@
           <div class="row"><div class="key">/compact [focus]</div><div class="desc-wrap"><div class="desc-en">Compress with focus keyword</div><div class="desc-ko">포커스 키워드를 유지하며 컨텍스트 압축</div></div></div>
           <div class="row"><div class="key">Auto-compact</div><div class="desc-wrap"><div class="desc-en">~95% capacity, thrash detection ✅ v2.1.89</div><div class="desc-ko">95% 도달 시 자동 압축, 3회 반복 시 중단</div></div></div>
           <div class="row"><div class="key">CLAUDE.md</div><div class="desc-wrap"><div class="desc-en">Survives compaction!</div><div class="desc-ko">압축 후에도 항상 유지됨 (필수 지시문 보존)</div></div></div>
-          <div class="row"><div class="key">1M context</div><div class="desc-wrap"><div class="desc-en">Opus 4.6 (Max/Team/Ent)</div><div class="desc-ko">Opus 4.6 기준 1M 토큰 (플랜 조건 별도 확인)</div></div></div>
+          <div class="row"><div class="key">1M context</div><div class="desc-wrap"><div class="desc-en">Opus 4.6 (Pro/Max/Team/Ent)</div><div class="desc-ko">Opus 4.6 기준 1M 토큰 (플랜 조건 별도 확인)</div></div></div>
 
           <div class="sub">Session Power Moves</div>
           <div class="row"><div class="key">claude -c</div><div class="desc-wrap"><div class="desc-en">Continue last conversation</div><div class="desc-ko">마지막 대화 이어가기</div></div></div>

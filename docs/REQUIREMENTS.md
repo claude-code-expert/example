@@ -34,7 +34,9 @@ CRUD 기능과 필터링을 제공하며, 인증 없이 동작한다.
 | Styling | Tailwind CSS | 3.x |
 | Database | PostgreSQL | 15.x |
 | ORM | Prisma | 5.x |
-| Testing | Jest, React Testing Library | 29.x |
+| Testing | Jest 29.x / React Testing Library 15.x | - |
+
+> 이 표는 TRD.md 1.2의 요약본이다 — 스택 변경 시 TRD를 먼저 수정한다.
 
 ## 디렉토리 구조
 ```
@@ -175,7 +177,7 @@ NODE_ENV=              # development | production
 
 ---
 
-## 5. 문서 간 연계와 활용
+## 문서 간 연계와 활용
 
 ### AI 코딩 도구와의 협업 흐름
 ```
@@ -195,7 +197,7 @@ NODE_ENV=              # development | production
 
    └─ 프로젝트 루트에 배치
 
-   └─ Claude Code가 자동으로 참조
+   └─ CLAUDE.md에 @REQUIREMENTS.md 임포트를 추가하거나 프롬프트에서 명시적으로 참조 지시 (CLAUDE.md만 자동 로드됨)
 
 4. 개발 진행
 

@@ -32,9 +32,6 @@ Skills는 [Agent Skills 명세](https://agentskills.io)를 따르며, 이를 통
 
 ```bash
 # Vercel의 모든 스킬 설치
-npx add-skill vercel-labs/agent-skills
-
-# 또는 skills CLI 사용
 npx skills add vercel-labs/agent-skills
 ```
 
@@ -42,23 +39,25 @@ npx skills add vercel-labs/agent-skills
 
 ```bash
 # 저장소의 스킬 목록 확인
-npx add-skill vercel-labs/agent-skills --list
+npx skills add vercel-labs/agent-skills --list
 
 # 특정 스킬만 설치
-npx add-skill vercel-labs/agent-skills --skill react-best-practices
+npx skills add vercel-labs/agent-skills --skill react-best-practices
 
 # 여러 스킬 설치
-npx add-skill vercel-labs/agent-skills --skill react-best-practices --skill web-design-guidelines
+npx skills add vercel-labs/agent-skills --skill react-best-practices --skill web-design-guidelines
 
 # 특정 에이전트에만 설치
-npx add-skill vercel-labs/agent-skills -a claude-code -a cursor
+npx skills add vercel-labs/agent-skills -a claude-code -a cursor
 
 # 전역 설치 (모든 프로젝트에서 사용)
-npx add-skill vercel-labs/agent-skills -g
+npx skills add vercel-labs/agent-skills -g
 
 # CI/CD용 비대화형 설치
-npx add-skill vercel-labs/agent-skills --skill react-best-practices -g -a claude-code -y
+npx skills add vercel-labs/agent-skills --skill react-best-practices -g -a claude-code -y
 ```
+
+> 구 add-skill CLI는 skills CLI로 통합되었다 (2026-06 기준 vercel-labs/skills v1.5.x).
 
 ### CLI 옵션
 
@@ -75,6 +74,8 @@ npx add-skill vercel-labs/agent-skills --skill react-best-practices -g -a claude
 ## 3. 지원 에이전트
 
 ### 호환 에이전트 목록
+
+주요 에이전트 예시 (전체 목록은 vercel-labs/skills README 참조):
 
 | 에이전트 | 프로젝트 경로 | 전역 경로 |
 |---------|-------------|----------|
@@ -348,7 +349,7 @@ description: 이 스킬이 무엇을 하고 언제 사용하는지 설명
 | 구분 | 링크 |
 |------|------|
 | **Agent Skills 저장소** | https://github.com/vercel-labs/agent-skills |
-| **add-skill CLI** | https://github.com/vercel-labs/add-skill |
+| **skills CLI (구 add-skill)** | https://github.com/vercel-labs/skills |
 | **Skills 디렉토리** | https://skills.sh |
 | **Agent Skills 명세** | https://agentskills.io |
 | **Vercel 공식 발표** | https://vercel.com/changelog/introducing-skills-the-open-agent-skills-ecosystem |
@@ -371,8 +372,8 @@ description: 이 스킬이 무엇을 하고 언제 사용하는지 설명
 | **릴리스** | 2026년 1월 20일 |
 | **라이선스** | MIT |
 | **제공 스킬** | react-best-practices, web-design-guidelines, vercel-deploy |
-| **지원 에이전트** | Claude Code, Cursor, OpenCode, Codex, GitHub Copilot, Windsurf 등 17개+ |
-| **설치 명령** | `npx add-skill vercel-labs/agent-skills` |
+| **지원 에이전트** | Claude Code, Cursor, OpenCode, Codex, GitHub Copilot, Windsurf 등 70개 이상 (2026년 6월, vercel-labs/skills 기준 — 발표 시점인 2026년 1월에는 17개) |
+| **설치 명령** | `npx skills add vercel-labs/agent-skills` |
 
 ---
 

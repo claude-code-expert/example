@@ -42,6 +42,8 @@ uvx --from git+https://github.com/github/spec-kit.git specify init <PROJECT_NAME
 uv tool install specify-cli --force --from git+https://github.com/github/spec-kit.git
 ```
 
+> 재현 가능한 설치를 위해 릴리스 태그 고정을 권장: `--from git+https://github.com/github/spec-kit.git@v0.10.2` (2026-06 기준 최신)
+
 ---
 
 ## 3. 핵심 구성 요소
@@ -95,11 +97,12 @@ specify init . --force --ai claude
     ├── memory
     │   └── constitution.md
     ├── scripts
-    │   ├── check-prerequisites.sh
-    │   ├── common.sh
-    │   ├── create-new-feature.sh
-    │   ├── setup-plan.sh
-    │   └── update-claude-md.sh
+    │   └── bash
+    │       ├── check-prerequisites.sh
+    │       ├── common.sh
+    │       ├── create-new-feature.sh
+    │       ├── setup-plan.sh
+    │       └── update-agent-context.sh
     ├── specs
     │   └── [feature-name]
     │       └── spec.md
@@ -135,6 +138,8 @@ specify init . --force --ai claude
 
 ## 6. 지원 AI 에이전트
 
+> v0.0.90 (2025년 12월) 기준 목록이다. 2026년 6월 현재 지원 에이전트는 40여 개로 확대 — 최신 목록은 공식 통합 가이드(github.github.io/spec-kit) 참조.
+
 | 에이전트 | 지원 | 비고 |
 |----------|:----:|------|
 | Claude Code | ✅ | |
@@ -148,7 +153,7 @@ specify init . --force --ai claude
 | Kilo Code | ✅ | |
 | Roo Code | ✅ | |
 | Amp | ✅ | |
-| Amazon Q Developer CLI | ⚠️ | 커스텀 슬래시 명령어 인자 미지원 |
+| Kiro CLI (구 Amazon Q Developer CLI) | ⚠️ | 커스텀 슬래시 명령어 인자 미지원 |
 
 ---
 
@@ -251,7 +256,7 @@ API 엔드포인트는 POST /api/user/image로 설계해줘.
 ## 10. 주요 참고 자료
 
 - **공식 저장소**: https://github.com/github/spec-kit
-- **공식 문서 사이트**: https://speckit.org/
+- **공식 문서 사이트**: https://github.github.io/spec-kit/
 - **GitHub 블로그 소개글**: https://github.blog/ai-and-ml/generative-ai/spec-driven-development-with-ai-get-started-with-a-new-open-source-toolkit/
 - **방법론 상세 문서**: https://github.com/github/spec-kit/blob/main/spec-driven.md
 

@@ -31,8 +31,9 @@ frontend/src/components/{컴포넌트명}/
 
 ## 템플릿 참조
 
-컴포넌트 생성 시 `templates/component.tsx` 템플릿을 사용합니다.
-테스트 생성 시 `templates/component.test.tsx` 템플릿을 사용합니다.
+컴포넌트 생성 시 `templates/component.tsx`, 테스트 생성 시 `templates/component.test.tsx` 템플릿을 참조합니다.
+단, 템플릿 파일(`component.tsx`, `component.test.tsx`)은 이 저장소에 포함되어 있지 않습니다.
+사용하는 프로젝트의 `.claude/skills/templates/` 경로에 직접 생성한 뒤 참조하세요.
 
 ## 금지 사항
 

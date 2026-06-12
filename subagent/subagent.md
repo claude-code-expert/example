@@ -131,8 +131,8 @@ The `description` field is critical — Claude reads it to decide whether to aut
 ### Storage Locations & Priority / 저장 위치와 우선순위
 
 ```
-CLI --agents flag  >  .claude/agents/ (project)  >  ~/.claude/agents/ (user)  >  plugin
-     (highest)              (team-shared)               (personal)              (lowest)
+Managed settings (org-wide)  >  CLI --agents flag  >  .claude/agents/ (project)  >  ~/.claude/agents/ (user)  >  plugin
+         (highest)                                          (team-shared)               (personal)              (lowest)
 ```
 
 동일한 이름의 에이전트가 여러 곳에 있으면 높은 우선순위가 적용됩니다. Squad Agent는 `~/.claude/agents/`(개인)에 설치되므로, 프로젝트에 같은 이름의 파일을 두면 프로젝트 버전이 우선합니다.
@@ -145,9 +145,9 @@ When agents with the same name exist in multiple locations, the higher-priority 
 |---|---|---|
 | **Scope / 범위** | Within a single session / 단일 세션 내 | Across separate sessions / 별도 세션 간 |
 | **Context / 컨텍스트** | Own window, returns summary / 독립 윈도우, 요약 반환 | Fully independent (worktree) / 완전 독립 |
-| **Communication / 통신** | Via Task tool / Task 도구 | Via filesystem & Git / 파일/Git |
+| **Communication / 통신** | Via Agent(Task) tool / Agent(Task) 도구 | Shared task list & direct messaging / 공유 태스크 리스트·직접 메시징 |
 | **Best for / 적합** | Review, analysis, short tasks / 리뷰, 분석, 단발 작업 | Long-running parallel dev / 장기 병렬 개발 |
-| **Nesting / 중첩** | Cannot spawn sub-subagents / 서브의 서브 불가 | Independent sessions / 독립 세션 |
+| **Nesting / 중첩** | Up to 5 levels deep (v2.1.172+) / 최대 5단계 중첩 가능 (v2.1.172+) | Independent sessions / 독립 세션 |
 
 ### Frontmatter Reference / Frontmatter 레퍼런스
 

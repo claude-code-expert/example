@@ -4,14 +4,14 @@
 > ☕ [www.brewnet.dev](https://www.brewnet.dev) — 셀프 호스팅 홈서버 자동 구축 오픈소스
 
 
-> v2.1.91 · April 2026 · 공식 Changelog 대조 검증 완료 · 한국어 설명 포함
+> v2.1.91 · April 2026 · 공식 Changelog 대조 검증 완료 · 한국어 설명 포함 · 2026-06-12 재검증
 
 ## 검증 범례
 
 | 배지 | 의미 |
 |------|------|
 | ✅ 확인됨 | 공식 changelog 일치 항목 |
-| ⚠️ 미확인 | v2.1.91 NEW 항목 (공홈 미반영) |
+| ⚠️ 미확인 | 작성 시점 미확인 항목 (2026-06-12 재검증에서 대부분 공식 문서 확인됨) |
 | ❌ 주의 | 오류 가능성 항목 |
 
 ---
@@ -38,10 +38,10 @@
 
 | 단축키 | 기능 (EN) | 기능 (KO) |
 |--------|-----------|-----------|
-| `Shift+Tab` | Cycle permission modes | 권한 모드 순환 (Normal → Auto → Plan) |
+| `Shift+Tab` | Cycle permission modes | 권한 모드 순환 (default → acceptEdits → plan) |
 | `Alt+P` | Switch model | 모델 전환 |
 | `Alt+T` | Toggle thinking | 사고(thinking) 모드 토글 |
-| `Alt+O` | Toggle fast mode **NEW** | 빠른 모드 토글 ⚠️ v2.1.91 미확인 |
+| `Alt+O` | Toggle fast mode **NEW** | 빠른 모드 토글 ✅ 확인됨 |
 
 ### Input / Prefixes
 
@@ -79,7 +79,7 @@
 | `claude mcp list` | List all servers | 등록된 MCP 서버 목록 출력 |
 | `claude mcp serve` | CC as MCP server | Claude Code 자체를 MCP 서버로 실행 |
 | 2KB cap | Tool desc + server instructions limit | 툴 설명·서버 지시문 최대 2KB 제한 (v2.1.84) |
-| `maxResultSizeChars` | `_meta` annotation override (up to 500K) **NEW** | 결과 크기 상한 재정의 최대 500K ⚠️ v2.1.91 미확인 |
+| `maxResultSizeChars` | `_meta` annotation override (up to 500K) **NEW** | 결과 크기 상한 재정의 최대 500K ✅ 확인됨 |
 
 ---
 
@@ -93,7 +93,7 @@
 | `/compact [focus]` | Compact context | 컨텍스트 압축 (포커스 키워드 지정 가능) |
 | `/resume` | Resume/switch session | 이전 세션 재개 또는 전환 |
 | `/rename [name]` | Name current session | 현재 세션 이름 지정 |
-| `/branch [name]` | Branch conversation | 대화 분기 생성 ⚠️ /fork alias 여부 미검증 |
+| `/branch [name]` | Branch conversation | 대화 분기 생성 ✅ /fork는 별칭 (v2.1.77+) |
 | `/cost` | Token usage stats | 토큰 사용량 통계 |
 | `/context` | Visualize context (grid) | 컨텍스트 사용량 시각화 |
 | `/diff` | Interactive diff viewer | 대화형 변경사항 비교기 |
@@ -105,8 +105,8 @@
 |------|-----------|-----------|
 | `/config` | Open settings | 설정 열기 |
 | `/model [model]` | Switch model | 모델 전환 (←→ 으로 effort 조정) |
-| `/effort [level]` | low / medium / high / max / auto | 추론 강도 설정 |
-| `/vim` | Toggle vim mode | vim 키바인딩 모드 토글 |
+| `/effort [level]` | low / medium / high / max / auto | 추론 강도 설정 (○낮음 · ◐중간 · ●높음 · ★최대) |
+| `/vim` | Toggle vim mode | vim 키바인딩 모드 토글 (v2.1.92부터 /config Editor mode로 이동) |
 | `/theme` | Change color theme | 컬러 테마 변경 |
 | `/permissions` | View/update permissions | 권한 확인·수정 (Recent 탭에서 r로 retry) |
 
@@ -130,7 +130,7 @@
 | `/plan [desc]` | Plan mode | 읽기 전용 계획 수립 모드 |
 | `/voice` | Push-to-talk voice (20 langs) | 푸시투토크 음성 입력 (20개 언어 지원) |
 | `/security-review` | Security analysis of changes | 변경사항 보안 분석 |
-| `/pr-comments` | Fetch GitHub PR comments | GitHub PR 코멘트 불러오기 |
+| `/pr-comments` | Fetch GitHub PR comments | GitHub PR 코멘트 불러오기 — v2.1.91에서 제거됨, gh CLI 또는 /review 사용 |
 
 ---
 
@@ -157,7 +157,7 @@
 
 | 항목 | 기능 (EN) | 기능 (KO) |
 |------|-----------|-----------|
-| `~/.claude/projects/<proj>/memory/` | MEMORY.md + topic files, auto-loaded | 자동 로드되는 기억 파일 ⚠️ 25KB/200줄 상한은 미검증 |
+| `~/.claude/projects/<proj>/memory/` | MEMORY.md + topic files, auto-loaded | 자동 로드되는 기억 파일 (25KB/200줄 상한) ✅ 확인됨 |
 
 ---
 
@@ -200,7 +200,7 @@
 | `/compact [focus]` | Compress with focus keyword | 포커스 키워드를 유지하며 컨텍스트 압축 |
 | Auto-compact | ~95% capacity, thrash detection ✅ v2.1.89 | 95% 도달 시 자동 압축, 3회 반복 시 중단 |
 | CLAUDE.md | Survives compaction! | 압축 후에도 항상 유지됨 (필수 지시문 보존) |
-| 1M context | Opus 4.6 (Max/Team/Ent) | Opus 4.6 기준 1M 토큰 (플랜 조건 별도 확인) |
+| 1M context | Opus 4.6 (Pro/Max/Team/Ent) | Opus 4.6 기준 1M 토큰 (플랜 조건 별도 확인) |
 
 ### Session Power Moves
 
@@ -241,7 +241,7 @@
 | `hooks: if` | Conditional hooks ✅ v2.1.85 | 조건부 훅 실행 (permission rule 문법) |
 | `hooks: "defer"` | Pause headless, resume later ✅ v2.1.89 | 헤드리스 세션 일시중단 후 나중에 재개 |
 | `PermissionDenied` hook | Fires on auto mode denial ✅ v2.1.89 | 자동 모드 거부 시 훅 실행 |
-| `disableSkillShellExec` | Block `!cmd` in skills **NEW** | 스킬/플러그인 내 쉘 실행 차단 ⚠️ v2.1.91 미확인 |
+| `disableSkillShellExecution` | Block `!cmd` in skills **NEW** | 스킬/플러그인 내 쉘 실행 차단 ✅ 확인됨 |
 | `allowedChannelPlugins` | Admin channel plugin allowlist ✅ v2.1.84 | 관리자 채널 플러그인 허용 목록 |
 
 ### Key Env Vars
@@ -265,7 +265,7 @@
 
 | 명령 | 기능 (EN) | 기능 (KO) |
 |------|-----------|-----------|
-| `/simplify` | Code review (parallel agents) | 코드 리뷰 (병렬 에이전트 사용) ⚠️ 3개 수치 미검증 |
+| `/simplify` | Code review (parallel agents) | 코드 단순화·정리 (reuse/quality/efficiency 병렬 에이전트 3개, 자동 수정). 버그 헌팅 리뷰는 /code-review |
 | `/batch` | Large parallel changes (5-30 worktrees) | 대규모 병렬 변경 (워크트리 자동 분배) |
 | `/debug [desc]` | Troubleshoot from debug log | 디버그 로그 기반 문제 해결 |
 | `/loop [interval]` | Recurring scheduled task | 반복 예약 작업 실행 |
@@ -290,7 +290,7 @@
 | `$ARGUMENTS` | User input placeholder | 사용자 입력값 치환 변수 |
 | `${CLAUDE_SKILL_DIR}` | Skill's own directory path | 스킬 자신의 디렉토리 경로 |
 | `` !`cmd` `` | Dynamic context injection | 동적 컨텍스트 주입 (쉘 명령 실행) |
-| `plugin bin/` | Ship executables for Bash tool **NEW** | Bash 툴용 실행파일 제공 ⚠️ v2.1.91 미확인 |
+| `plugin bin/` | Ship executables for Bash tool **NEW** | Bash 툴용 실행파일 제공 ✅ 확인됨 |
 
 ### Built-in Agents
 
@@ -421,7 +421,7 @@ claude --dangerously-skip-permissions \
 export ANTHROPIC_API_KEY=sk-ant-xxxxx
 
 # 기본 모델 재정의
-export ANTHROPIC_MODEL=claude-opus-4-6-20250514
+export ANTHROPIC_MODEL=claude-opus-4-8
 
 # 추론 강도 설정 (low/medium/high/max)
 export CLAUDE_CODE_EFFORT_LEVEL=high
@@ -483,7 +483,6 @@ claude -p "query" --bare
 | `CLAUDE_STREAM_IDLE_TIMEOUT_MS` | 스트리밍 타임아웃 (기본 90s) |
 | `BASH_DEFAULT_TIMEOUT_MS` | bash 명령 기본 타임아웃 |
 | `CLAUDECODE` | CC 내부 쉘 감지용 (=1 자동설정) |
-| `CLAUDE_CODE_EFFORT_LEVEL` | ⚠ 치트시트에 있으나 공식 docs에는 없음 |
 
 ---
 
@@ -495,4 +494,4 @@ claude -p "query" --bare
 - [Permission Modes 공식 문서](https://code.claude.com/docs/en/permission-modes)
 - [ENV Vars 공식 문서](https://code.claude.com/docs/en/env-vars)
 
-> ✅ 확인됨 | ⚠️ 미확인 = v2.1.91 미반영 | ❌ 주의 = 오류 가능
+> ✅ 확인됨 | ⚠️ 미확인 = 작성 시점 미확인 항목 (2026-06-12 재검증에서 대부분 공식 문서 확인됨) | ❌ 주의 = 오류 가능

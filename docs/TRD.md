@@ -87,9 +87,14 @@ TRD (Technical Requirements Document)
 | Language | TypeScript | 5.x | 타입 안전성, AI 도구와의 호환성 |
 | Styling | Tailwind CSS | 3.x | 유틸리티 기반, 빠른 개발 |
 | Framework | Next.js | 14.x | API Routes 통합, Vercel 배포 용이 |
+| State | TanStack Query | 5.x | 서버 상태 관리 |
+| Validation | Zod | 3.x | 스키마 검증 |
 | ORM | Prisma | 5.x | 타입 안전한 쿼리, 마이그레이션 |
 | Database | PostgreSQL | 15.x | 안정성, Railway 지원 |
-| Testing | Jest + RTL | 29.x | 표준 테스트 도구 |
+| Testing | Jest | 29.x | 표준 테스트 러너 |
+| Testing | React Testing Library | 15.x | 컴포넌트 테스트 |
+| Testing | Playwright | 1.x | E2E 테스트 |
+| Testing | Supertest | 7.x | API 통합 테스트 |
 
 ---
 
@@ -128,6 +133,8 @@ model Todo {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([completed])
+  @@index([createdAt])
   @@map("todos")
 }
 ```

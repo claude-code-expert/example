@@ -3,6 +3,8 @@
 > Permission Prompt가 뜰 때 폰으로 푸시 알림을 받고, Allow/Deny 버튼으로 원격 승인하는 방법.
 > 터미널 앞에 앉아있지 않아도 Claude Code가 멈추지 않는다.
 
+> Hook 이벤트 전체 목록과 CLI 플래그는 CLAUDE-CODE-CLI-ALIAS-SETTINGS.md 참조
+
 ---
 
 ## Table of Contents
@@ -485,7 +487,7 @@ export CLAUDE_NTFY_TOPIC="my-secret-topic"
 | Allow 눌렀는데 반응 없음 | 네트워크 문제로 SSE 끊김 | `curl` 타임아웃/재연결 확인 |
 | 동시에 여러 알림 올 때 혼란 | 정상 동작 | 각 알림에 Request ID가 있어 자동 매칭됨 |
 | Hook이 실행 안 됨 | Claude Code 버전 구형 | `claude --version` → v2.0.45+ 필요 |
-| VS Code에서 안 됨 | 알려진 버그 | CLI 환경에서만 정상 동작 (2026.02 기준) |
+| VS Code에서 안 됨 | 알려진 버그 | CLI 환경에서만 정상 동작 (2026년 6월 기준에도 미해결 — 이슈 #13203 등) |
 | timeout 후 터미널 프롬프트 안 뜸 | Hook이 비정상 종료 | 스크립트에 `set -euo pipefail` + `trap` 확인 |
 
 ### 디버그

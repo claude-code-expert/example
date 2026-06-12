@@ -10,6 +10,8 @@
 
 > **유출 경위:** 2026년 3월 31일, 보안 연구자 Chaofan Shou가 Claude Code npm 패키지(v2.1.88)에 `.npmignore`에서 제외되지 않은 소스맵 파일(`main.js.map`)을 발견, Anthropic R2 버킷에서 `src.zip`을 직접 다운로드. 512,000줄 TypeScript 소스코드 전체가 노출됨. Anthropic이 유출 사실을 공식 확인. **이미지 출처: npm 유출 소스 분석 기반 커뮤니티 시각화 자료** (cc.storyfox.cz와 무관). Anthropic 공식 발표 아님 — 교육·리서치 참고용.
 
+> 📌 **2026-06-12 갱신:** 본 문서는 유출 시점(2026-03-31) 분석 스냅샷이다. 이후 AGENT_TRIGGERS(→ /schedule·크론 도구, v2.1.144+), MONITOR_TOOL(→ Monitor 도구, v2.1.98), BUDDY(v2.1.89, 2026-04-01) 등 일부 기능이 정식 출시되었다.
+
 ---
 
 ## 타임라인 개요
@@ -55,14 +57,14 @@ Claude Code가 터미널을 닫은 후에도 백그라운드 데몬으로 살아
 
 `orchestration` `mailbox system` `multi-agent` `parallel` `toolset isolation`
 
-### AGENT_TRIGGERS
+### AGENT_TRIGGERS ✅ 출시됨 (v2.1.144+, /schedule·CronCreate 도구)
 
 - **EN:** Cron scheduling for agents — create, delete, list jobs. External webhook trigger variant included.
 - **KO:** **에이전트용 크론 스케줄링 + 외부 웹훅 트리거.**
 
 특정 시간 또는 외부 이벤트(웹훅)에 의해 Claude 에이전트가 자동 실행됩니다. 잡 생성·삭제·목록 조회 인터페이스 포함.
 
-현재 `/loop [interval]`은 대화 내에서만 동작하지만, AGENT_TRIGGERS는 세션 외부에서도 독립적으로 에이전트를 깨울 수 있는 더 강력한 트리거 시스템입니다.
+유출 시점에는 `/loop [interval]`이 대화 내에서만 동작하는 수준이었으나, AGENT_TRIGGERS는 이후 `/schedule` 명령과 크론 도구(CronCreate·CronDelete·CronList)로 정식 출시되어 세션 외부에서도 독립적으로 에이전트를 깨울 수 있게 되었습니다.
 
 `cron` `webhook trigger` `job scheduling` `automation`
 
@@ -125,12 +127,12 @@ Claude Code가 터미널을 닫은 후에도 백그라운드 데몬으로 살아
 
 `SSH` `cc:// URI` `remote session` `deep link`
 
-### MONITOR_TOOL
+### MONITOR_TOOL ✅ 출시됨 (v2.1.98, Monitor 도구)
 
 - **EN:** Watch an MCP resource and trigger actions when its state changes.
 - **KO:** **MCP 리소스를 감시하다 상태 변화 시 액션을 트리거.**
 
-데이터베이스 쿼리 결과, API 엔드포인트, 파일 상태 등 MCP 리소스를 주기적으로 폴링·감시하고, 변화가 감지되면 자동으로 Claude가 지정된 작업을 수행합니다.
+데이터베이스 쿼리 결과, API 엔드포인트, 파일 상태 등 MCP 리소스를 주기적으로 폴링·감시하고, 변화가 감지되면 자동으로 Claude가 지정된 작업을 수행합니다. 유출 시점에는 개발 진행 중(IN-FLIGHT)이었으나 v2.1.98에서 Monitor 도구로 정식 출시되었습니다.
 
 *예: "에러 로그가 증가하면 → 자동 분석 + Slack 알림 → 코드 수정 제안"*
 
@@ -299,9 +301,9 @@ Claude가 작성한 코드가 커밋될 때 어떤 Claude 세션·모델·설정
 - 입력창 옆 말풍선에 상주, 이름·성격은 Claude가 최초 부화 시 작성
 - 코스메틱 모자 아이템 존재
 
-*내부 주석: 4월 1~7일 티저, 2026년 5월 정식 출시 목표 (미확인). v2.1.89 changelog에 "/buddy" 만우절 기능으로 이미 노출됨.*
+*내부 주석: 4월 1~7일 티저 후 2026년 4월 1일 v2.1.89에서 만우절 기능으로 정식 공개됨. v2.1.89 changelog에 "/buddy" 만우절 기능으로 이미 노출됨.*
 
-`18 species` `rarity tiers` `5 stats` `userId hash` `May 2026 target`
+`18 species` `rarity tiers` `5 stats` `userId hash` `Released: 2026-04-01`
 
 ### LODESTONE · TORCH
 
@@ -373,7 +375,7 @@ Claude가 작성한 코드가 커밋될 때 어떤 Claude 세션·모델·설정
 
 - **Fennec** = Opus 4.6 내부 코드명
 - **Capybara** = Claude 4.6 변형 모델
-- **Numbat** = 현재 테스트 중인 모델
+- **Numbat** = 유출 시점(2026-03-31) 테스트 중이던 내부 코드명 (2026-06-12 기준 공식 발표 없음)
 - 전체 규모: 1,900개 파일, 512,000줄, main.tsx 단일 파일 785KB
 - **44개** 컴파일 타임 피처 플래그 (일부 자료: 108개 게이팅 모듈)
 - 컨텍스트 자동 압축 임계: **~167,000 토큰**에서 컨텍스트 파괴

@@ -6,6 +6,8 @@
 
 # Git CLI 필수 명령어 레퍼런스
 
+> 브랜치 네이밍·커밋 컨벤션 등 팀 워크플로우 규칙 템플릿은 [template/git-workflow.md](../template/git-workflow.md) 참조.
+
 ---
 
 ## 1. 필수 명령어

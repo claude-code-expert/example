@@ -274,7 +274,7 @@ SuperClaude v4.2는 포괄적인 Deep Research 기능을 제공합니다.
 
 ```bash
 # 기본 리서치
-/sc:research "latest AI developments 2024"
+/sc:research "latest AI developments 2026"
 
 # 특정 도메인 필터링 (Tavily MCP 연동)
 /sc:research "React patterns"  # domains: reactjs.org,github.com
@@ -306,9 +306,9 @@ SuperClaude v4.2는 포괄적인 Deep Research 기능을 제공합니다.
 
 ## 9. 버전 정보
 
-- **현재 안정 버전**: v4.2.0
+- **안정 버전**: v4.3.0 (2026년 3월 릴리스 — 집필 시점인 2026년 1월에는 v4.2.0)
 - **라이선스**: MIT
-- **GitHub Stars**: 20.4k+
+- **GitHub Stars**: 23.3k+ (2026년 6월 기준)
 - **개발자**: SuperClaude-Org (NomenAK)
 
 > ⚠️ **참고**: TypeScript 플러그인 시스템은 v5.0에서 계획 중이며 아직 사용할 수 없습니다.

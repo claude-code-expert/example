@@ -184,7 +184,7 @@ PRD (Product Requirements Document) 필수 요건
 
 ### 제약사항
 - 단일 사용자 환경 (인증 없음)
-- 무료 티어 배포 플랫폼 사용 (Vercel, Railway)
+- 무료 티어 배포 플랫폼 사용 (Vercel; DB는 Neon·Supabase 무료 티어. Railway는 체험 크레딧 소진 후 유료)
 - 개발 기간: 2주
 
 ### 가정

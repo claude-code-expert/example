@@ -1,5 +1,7 @@
 # PostgreSQL 터미널 명령어 가이드
 
+> psql 빠른 치트시트와 macOS 서버 관리(brew/pg_ctl)·프로젝트 로컬 세팅은 [cli/postgres_cli.md](../cli/postgres_cli.md) 참조.
+
 ## 1. 접속 및 기본 명령어
 
 ### 접속
@@ -63,7 +65,7 @@ CREATE USER myuser WITH
   PASSWORD 'mypassword'
   CREATEDB                -- DB 생성 권한
   CREATEROLE              -- 롤 생성 권한
-  VALID UNTIL '2025-12-31'; -- 만료일 설정
+  VALID UNTIL '2027-12-31'; -- 만료일 설정
 
 -- 슈퍼유저 생성
 CREATE USER admin_user WITH PASSWORD 'adminpass' SUPERUSER;

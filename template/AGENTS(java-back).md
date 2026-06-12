@@ -21,7 +21,7 @@ src/main/resources/
 └── db/migration/ Flyway 마이그레이션 파일
 
 docs/
-├── PATTERNS.md   코드 패턴 레퍼런스
+├── patterns.md   코드 패턴 레퍼런스
 └── api/
     └── openapi.yml
 ```
@@ -59,7 +59,7 @@ docker-compose up -d       # 로컬 인프라 (DB, Redis) 실행
 
 ## 작업 규칙
 
-- 모든 코드는 `docs/PATTERNS.md`의 구조를 따른다
+- 모든 코드는 `docs/patterns.md`의 구조를 따른다
 - 신규 기능에는 반드시 단위 테스트 포함 — 메서드명 형식: `methodName_condition_expected`
 - DTO는 Java `record` 사용
 - Entity 필드는 기본적으로 불변으로 설계

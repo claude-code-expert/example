@@ -40,3 +40,5 @@ it('should return sum of two numbers', () => {
 - 외부 의존성은 반드시 Mock 처리
 - Mock 파일은 __mocks__ 디렉토리에 위치
 - jest.mock() 사용 시 파일 상단에 배치
+
+> 이 예제는 Jest 기준이다. Vitest 사용 시 vi.mock()과 tests/fixtures/를 사용한다 (template/testing.md 참조).

@@ -11,7 +11,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/block-dangerous.py"
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/block-dangerous.py",
+            "timeout": 5
           }
         ]
       }
@@ -21,11 +22,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/notify-slack.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/notify-slack.sh",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": ".claude/hooks/notify-telegram.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/notify-telegram.sh",
+            "timeout": 10
           }
         ]
       }
@@ -36,27 +39,33 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/format-ts.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/format-ts.sh",
+            "timeout": 30
           },
           {
             "type": "command",
-            "command": ".claude/hooks/format-py.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/format-py.sh",
+            "timeout": 30
           },
           {
             "type": "command",
-            "command": ".claude/hooks/lint-ts.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/lint-ts.sh",
+            "timeout": 30
           },
           {
             "type": "command",
-            "command": ".claude/hooks/lint-py.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/lint-py.sh",
+            "timeout": 30
           },
           {
             "type": "command",
-            "command": ".claude/hooks/test-ts.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/test-ts.sh",
+            "timeout": 60
           },
           {
             "type": "command",
-            "command": ".claude/hooks/test-py.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/test-py.sh",
+            "timeout": 60
           }
         ]
       }

@@ -40,7 +40,8 @@
 
 | 플래그 | 설명 | 예시 |
 |--------|------|------|
-| `--model` | 모델 지정 (`sonnet`, `opus`, `haiku` 또는 전체 모델명) | `claude --model opus` |
+| `--model` | 모델 지정 (`fable`, `opus`, `sonnet`, `haiku` 또는 전체 모델명 — 예: claude-fable-5) | `claude --model opus` |
+| `--effort <level>` | 현재 세션 추론 강도 (low~max) | `claude --effort high` |
 | `--continue`, `-c` | 마지막 대화 이어서 | `claude -c` |
 | `--resume`, `-r` | 특정 세션 재개 | `claude -r abc123` |
 | `--print`, `-p` | 비대화형 모드 (스크립트용) | `claude -p "query"` |
@@ -51,7 +52,7 @@
 | `--append-system-prompt` | 기본 시스템 프롬프트에 추가 | `claude --append-system-prompt "TypeScript만 사용"` |
 | `--system-prompt` | 시스템 프롬프트 전체 교체 | `claude --system-prompt "You are a Python expert"` |
 | `--output-format` | 출력 형식 (`text`, `json`, `stream-json`) | `claude -p --output-format json "query"` |
-| `--max-turns` | 비대화형 모드 최대 턴 수 제한 | `claude -p --max-turns 3 "query"` |
+| `--max-turns` | 비대화형 모드 최대 턴 수 제한 (hidden flag — --help에는 미표시되나 동작함) | `claude -p --max-turns 3 "query"` |
 | `--verbose` | 상세 로그 출력 | `claude --verbose` |
 | `--debug` | 디버그 모드 (카테고리 필터링 가능) | `claude --debug "api,hooks"` |
 | `--add-dir` | 추가 작업 디렉토리 지정 | `claude --add-dir ../apps ../lib` |
@@ -60,7 +61,6 @@
 | `--tools` | 사용 가능한 도구 제한 | `claude -p --tools "Bash,Edit,Read" "query"` |
 | `--fork-session` | 세션 재개 시 새 세션 ID 생성 | `claude --resume abc --fork-session` |
 | `--fallback-model` | 기본 모델 과부하 시 대체 모델 | `claude -p --fallback-model sonnet "query"` |
-| `--notify` | 작업 완료 시 시스템 알림 | `claude --notify` |
 | `--version`, `-v` | 버전 출력 | `claude -v` |
 
 ### 시스템 프롬프트 플래그 비교
@@ -108,8 +108,8 @@ alias ccdo="claude --dangerously-skip-permissions --model opus"   # YOLO + Opus
 alias ccds="claude --dangerously-skip-permissions --model sonnet" # YOLO + Sonnet
 alias ccdc="claude --dangerously-skip-permissions -c"      # YOLO + 이어서
 
-# ── YOLO + 알림 (작업 완료 시 시스템 알림) ────────────
-alias ccdn="claude --dangerously-skip-permissions --notify"
+# ── YOLO + 알림 (완료 알림은 settings.json의 hooks.Stop으로 구성) ────────
+alias ccdn="claude --dangerously-skip-permissions"
 ```
 
 ### 비대화형 (스크립트/파이프라인)
@@ -371,6 +371,8 @@ Write(src/**)          ← src 디렉토리 하위 모든 파일 쓰기
 
 ### 통합 Hook 설정 예시
 
+> PermissionRequest 원격 승인 상세는 [CLAUDE-CODE-NTFY-MOBILE-APPROVAL.md](./CLAUDE-CODE-NTFY-MOBILE-APPROVAL.md) 참조
+
 ```jsonc
 {
   "hooks": {
@@ -448,7 +450,8 @@ Hook에서 사용할 수 있는 소리 파일 (`/System/Library/Sounds/`):
 
 | 별칭 | 설명 |
 |------|------|
-| `sonnet` | Claude Sonnet 최신 (기본값) |
+| `fable` | Claude Fable 5 (Mythos급, 가장 강력 — 2026-06-09 출시) |
+| `sonnet` | Claude Sonnet 최신 (기본 모델은 플랜·설정에 따라 다름) |
 | `opus` | Claude Opus 최신 (가장 강력) |
 | `haiku` | Claude Haiku 최신 (가장 빠름/저렴) |
 | `opusplan` | Plan 단계: Opus, 실행 단계: Sonnet (하이브리드) |
@@ -466,14 +469,17 @@ claude --model opus
 }
 
 # 환경변수
-export ANTHROPIC_MODEL="claude-opus-4-6"
+export ANTHROPIC_MODEL="claude-opus-4-8"
 ```
 
-### Effort Level (Opus 전용)
+### Effort Level
 
 ```bash
+# CLI 플래그 (현재 세션)
+claude --effort high
+
 # CLI 환경변수
-export CLAUDE_CODE_EFFORT_LEVEL=high    # low, medium, high
+export CLAUDE_CODE_EFFORT_LEVEL=high    # low, medium, high, xhigh, max 5단계
 
 # settings.json
 {

@@ -1,5 +1,8 @@
 # Git Workflow Rules
 - CLAUDE.md 에서 참조하는 파일 (.claude/rules/ 하위에 위치)
+
+> 개별 명령어 상세 사용법은 [cli/git_cli.md](../cli/git_cli.md) 참조.
+
 ## Branch Naming
 ```
 feature/short-description     # new features

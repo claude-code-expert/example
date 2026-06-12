@@ -6,6 +6,8 @@
 
 # PostgreSQL CLI 명령어 레퍼런스
 
+> 종합 SQL 레퍼런스(UPSERT, CTE, EXPLAIN, VACUUM 등)는 [postgres/postgres-commands.md](../postgres/postgres-commands.md) 참조. 이 문서는 빠른 치트시트와 macOS 서버 관리·프로젝트 로컬 세팅 중심이다.
+
 ---
 
 ## 1. 접속 / 종료

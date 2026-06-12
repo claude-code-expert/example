@@ -16,7 +16,7 @@ Claude Code Rule 템플릿입니다.
 | `api-routes.md` | `src/api/**/*.ts` | API 개발 규칙 (응답 형식, 에러 처리, 인증) |
 | `frontend.md` | `src/components/**/*.tsx`, `src/pages/**/*.tsx` | 프론트엔드 컴포넌트 규칙 |
 | `testing.md` | `**/*.test.ts`, `**/*.spec.ts`, `tests/**/*` | 테스트 작성 규칙 (AAA 패턴, Mock 사용) |
-| `database.md` | `src/models/**/*.ts`, `prisma/**/*` | 데이터베이스 규칙 (모델 정의, 쿼리 작성) |
+| `database.md` | `src/models/**/*.ts`, `src/repositories/**/*.ts`, `prisma/**/*` | 데이터베이스 규칙 (모델 정의, 쿼리 작성) |
 
 ## 사용 방법
 

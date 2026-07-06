@@ -1,0 +1,664 @@
+<!DOCTYPE html><html lang="ko"><head>
+<title>Claude Fable 5 실전 운용 가이드</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  /* 폰트 선택 이유: 한글 장문 가독성을 위해 본문 Noto Sans KR, 코드·모델ID·경로는 고정폭
+     JetBrains Mono로 분리해 "읽는 글"과 "입력하는 값"을 시각적으로 구분한다. */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --text:   #111111;
+    --muted:  #6B7280;
+    --border: #E5E7EB;
+    --bg:     #FFFFFF;
+    --code-bg:#F3F4F6;
+    --soft-bg:#F8F7F4;
+    --accent: #B45309;   /* 단일 액센트(deep amber) — 링크·강조·중요 노드에만 */
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 17px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 워터마크 — 화면 전체에 옅게 반복(클릭 방해 없음) */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: .22;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240'%3E%3Ctext x='15' y='130' font-family='monospace' font-size='16' fill='%2394A3B8' transform='rotate(-30 180 120)'%3Erun-ai.kr%20%20%20brewnet.dev%40gmail.com%3C/text%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+  .layout { display: block; }
+  @media (min-width: 1040px) {
+    .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 48px; align-items: start; }
+  }
+
+  /* 목차 */
+  .toc {
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 16px; margin: 24px 0; font-size: 14px;
+  }
+  @media (min-width: 1040px) {
+    .toc { position: sticky; top: 24px; margin: 40px 0; max-height: calc(100vh - 60px); overflow: auto; }
+  }
+  .toc h2 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+            font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; }
+  .toc ol { list-style: none; counter-reset: t; }
+  .toc li { counter-increment: t; margin: 2px 0; }
+  .toc a {
+    display: block; padding: 5px 8px; color: var(--text); text-decoration: none;
+    border-left: 2px solid transparent; line-height: 1.4; border-radius: 0 4px 4px 0;
+  }
+  .toc a::before { content: counter(t, decimal-leading-zero) " "; color: var(--muted);
+                   font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .toc a:hover { color: var(--accent); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); background: var(--soft-bg); font-weight: 500; }
+
+  /* 헤더 */
+  header { padding: 56px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .kicker { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  h1 { font-size: 34px; font-weight: 900; line-height: 1.2; letter-spacing: -.02em; }
+  .lead { color: var(--muted); font-size: 17px; margin-top: 14px; max-width: 820px; }
+  .meta { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 18px; }
+
+  /* 본문 타이포 */
+  main { padding-bottom: 80px; }
+  section { padding-top: 48px; }
+  h2.sec { font-size: 25px; font-weight: 700; letter-spacing: -.02em; line-height: 1.3;
+           padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  h2.sec .n { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; margin-right: 10px; }
+  h3 { font-size: 19px; font-weight: 700; margin: 32px 0 10px; }
+  h4 { font-size: 16px; font-weight: 700; margin: 22px 0 8px; }
+  p { margin: 12px 0; }
+  ul, ol { margin: 12px 0 12px 4px; padding-left: 22px; }
+  li { margin: 6px 0; }
+  strong { font-weight: 700; }
+  a.link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; word-break: break-all; }
+
+  /* 코드 블록 + 복사 버튼 */
+  pre { position: relative; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+        padding: 16px 44px 16px 18px; margin: 14px 0; overflow-x: auto;
+        font-family: 'JetBrains Mono', monospace; font-size: 13.5px; line-height: 1.7; }
+  pre code { font-family: inherit; white-space: pre; color: #1f2937; }
+  pre .c { color: var(--muted); }            /* 주석 */
+  pre .p { color: var(--accent); }           /* 강조 */
+  .copy { position: absolute; top: 8px; right: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+          color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+          padding: 3px 9px; cursor: pointer; transition: color 120ms, border-color 120ms; }
+  .copy:hover { color: var(--accent); border-color: var(--accent); }
+  code.inline { font-family: 'JetBrains Mono', monospace; font-size: .9em; background: var(--code-bg);
+                border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; }
+
+  /* 콜아웃 */
+  .note { border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+          background: var(--soft-bg); padding: 14px 18px; margin: 18px 0; }
+  .note .t { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .note p { margin: 4px 0; }
+  .note.warn { border-left-color: #B91C1C; }
+  .note.warn .t { color: #B91C1C; }
+
+  /* 표 */
+  .tw { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 16px 0; }
+  th { text-align: left; font-weight: 700; border-bottom: 2px solid var(--text); padding: 9px 12px; }
+  td { border-bottom: 1px solid var(--border); padding: 9px 12px; vertical-align: top; }
+  td code, th code { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  /* 체크리스트 */
+  ul.chk { list-style: none; padding-left: 0; margin-left: 0; }
+  ul.chk > li { display: flex; align-items: flex-start; gap: .5em; margin: .3em 0; }
+  ul.chk > li > input { margin: .45em 0 0; flex: 0 0 auto; cursor: pointer; accent-color: var(--accent); }
+  ul.chk > li > input:checked + span { text-decoration: line-through; opacity: .5; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0 60px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--accent); }
+
+  @media print {
+    .toc, .copy { display: none; }
+    body { font-size: 12pt; }
+    a.link::after { content: " (" attr(href) ")"; font-size: 9pt; color: #555; }
+    section { page-break-inside: auto; }
+    pre, table { page-break-inside: avoid; }
+    body::before { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Guide · Claude Fable 5</div>
+    <h1>Claude Fable 5 실전 운용 가이드</h1>
+    <p class="lead">사용법 · 하위 모델 작업 분배 · 멀티 에이전트 오케스트레이션 · 워크플로우 순서 · 안티패턴 ·
+      베스트 프랙티스 프롬프트 · 스킬 활용 · 워크플로우 활용을 예시 중심으로 정리한다.
+      Claude Code 세션(CLAUDE.md)과 API 직접 호출 양쪽에 적용된다.</p>
+    <p class="meta">기준: Anthropic claude-api 스킬(모델 카탈로그·마이그레이션 가이드) · 검증 2026-07 · 모델 ID <code class="inline">claude-fable-5</code></p>
+  </header>
+
+  <div class="layout">
+
+    <nav class="toc" aria-label="목차">
+      <h2>목차</h2>
+      <ol>
+        <li><a href="#s0">한눈에 — Fable 5란</a></li>
+        <li><a href="#s1">필수 설정</a></li>
+        <li><a href="#s2">하위 모델 작업 분배</a></li>
+        <li><a href="#s3">멀티 에이전트 오케스트레이션</a></li>
+        <li><a href="#s4">작업 워크플로우 순서</a></li>
+        <li><a href="#s5">워크플로우에서의 활용</a></li>
+        <li><a href="#s6">안티패턴 — 하지 말 것</a></li>
+        <li><a href="#s7">베스트 프랙티스 프롬프트</a></li>
+        <li><a href="#s8">Refusal 처리</a></li>
+        <li><a href="#s9">스킬 활용 방안</a></li>
+        <li><a href="#s10">요청 전 체크리스트</a></li>
+        <li><a href="#appendix">참고</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <section id="s0">
+        <h2 class="sec"><span class="n">00</span>한눈에 — Fable 5란</h2>
+        <p>Claude Fable 5는 Anthropic이 널리 출시한 가장 강력한 모델이다. 가장 까다로운 추론과
+          <strong>장기 자율 에이전트 작업(long-horizon agentic)</strong>에 쓴다. Opus 4.8과 API 표면은 거의 같지만
+          동작 성향과 몇 가지 파라미터 규칙이 다르다.</p>
+        <div class="tw"><table>
+          <thead><tr><th>항목</th><th>값</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>모델 ID</td><td><code>claude-fable-5</code></td><td>Project Glasswing에서는 <code>claude-mythos-5</code> (동일 스펙)</td></tr>
+            <tr><td>컨텍스트</td><td>1M 토큰</td><td>기본값 = 최대값</td></tr>
+            <tr><td>최대 출력</td><td>128K 토큰</td><td>16K 초과는 스트리밍 필수</td></tr>
+            <tr><td>가격 (1M 토큰)</td><td>입력 $10 / 출력 $50</td><td>Opus 4.8($5/$25)의 2배</td></tr>
+            <tr><td>Thinking</td><td><strong>항상 켜짐</strong></td><td><code>thinking</code> 파라미터 생략</td></tr>
+            <tr><td>토크나이저</td><td>Opus 4.8과 동일</td><td>Opus 4.7/4.8 마이그레이션 시 토큰 수 거의 불변</td></tr>
+            <tr><td>데이터 보존</td><td><strong>30일 필수</strong></td><td>ZDR(제로 데이터 보존) 조직은 전 요청 400</td></tr>
+          </tbody>
+        </table></div>
+        <p><strong>언제 쓰나</strong> — 밤새 도는 자율 코딩, 잘 명세된 시스템의 첫 구현, 복잡한 리팩터·리서치,
+          엔드투엔드 산출물(재무 분석·스프레드시트·슬라이드·문서), 대규모 병렬 서브에이전트 협업.</p>
+        <p><strong>언제 안 쓰나</strong> — 일상적 코딩·요약·분류. 가격이 Opus-tier를 넘는다. "최신 모델로 업그레이드"의
+          기본 대상은 여전히 <code class="inline">claude-opus-4-8</code>이다. Fable 5는 <strong>명시적으로 선택했을 때만</strong> 쓴다.
+          또한 리서치 생물학·대부분의 사이버보안 콘텐츠는 안전 분류기가 거부할 수 있다(§8).</p>
+      </section>
+
+      <section id="s1">
+        <h2 class="sec"><span class="n">01</span>필수 설정 — 모든 요청 공통</h2>
+        <h3>1.1 기본 호출 (Python)</h3>
+        <pre><code>response = client.messages.create(
+    model=<span class="p">"claude-fable-5"</span>,
+    max_tokens=64000,                    <span class="c"># 큰 출력은 스트리밍과 함께</span>
+    <span class="c"># thinking 파라미터를 아예 넣지 않는다 — 항상 켜짐</span>
+    output_config={<span class="p">"effort"</span>: <span class="p">"high"</span>},    <span class="c"># low | medium | high | xhigh | max</span>
+    messages=[...],
+)</code></pre>
+
+        <h3>1.2 규칙 (어기면 400)</h3>
+        <div class="tw"><table>
+          <thead><tr><th>하지 말 것</th><th>이유</th><th>대신</th></tr></thead>
+          <tbody>
+            <tr><td><code>thinking: {type: "disabled"}</code></td><td>Fable 5는 400 반환</td><td><code>thinking</code> 파라미터를 <strong>생략</strong></td></tr>
+            <tr><td><code>thinking: {..., budget_tokens: N}</code></td><td>400</td><td><code>output_config.effort</code>로 깊이 제어</td></tr>
+            <tr><td><code>temperature</code> / <code>top_p</code> / <code>top_k</code></td><td>400</td><td>프롬프트로 스타일·변주 유도</td></tr>
+            <tr><td>어시스턴트 프리필(마지막 assistant 턴)</td><td>400</td><td><code>output_config.format</code> 또는 시스템 지시</td></tr>
+            <tr><td>ZDR 조직에서 호출</td><td>전 요청 400</td><td>조직 데이터 보존 30일 이상</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>1.3 Effort — 지능/지연/비용의 핵심 레버</h3>
+        <p><code class="inline">output_config.effort</code>가 Fable 5에서 가장 중요한 제어다.
+          <strong><code class="inline">xhigh</code>를 반사적으로 쓰지 말고</strong> <code class="inline">high</code>를 기본으로 두고
+          자신의 평가셋으로 sweep한다.</p>
+        <div class="tw"><table>
+          <thead><tr><th>effort</th><th>용도</th></tr></thead>
+          <tbody>
+            <tr><td><code>max</code></td><td>극도로 어렵고 지연 무관한 경우. 과도한 추론(overthinking) 위험</td></tr>
+            <tr><td><code>xhigh</code></td><td>가장 어려운 코딩·에이전트 작업</td></tr>
+            <tr><td><code>high</code></td><td>대부분의 지능 민감 작업의 기본값</td></tr>
+            <tr><td><code>medium</code></td><td>일상 작업. 비용 절감</td></tr>
+            <tr><td><code>low</code></td><td>서브에이전트, 단순·기계적 작업. <strong>Fable 5는 low에서도 이전 모델의 xhigh/max를 능가하는 경우가 많다</strong></td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><div class="t">튜닝 원칙</div>
+          <p>작업이 정확히 끝났는데 필요 이상 오래 걸리면 effort를 내린다. 높은 effort는 뛰어난 검증 동작과
+            가장 엄밀한 산출물을 사지만, 일상 작업에서는 필요 이상으로 맥락을 모으고 숙고한다.</p></div>
+
+        <h3>1.4 Thinking 출력 (필요 시)</h3>
+        <p>Fable 5는 <strong>원본 사고 사슬(raw chain of thought)을 절대 반환하지 않는다.</strong> 요약만 볼 수 있다.</p>
+        <pre><code>thinking={<span class="p">"type"</span>: <span class="p">"adaptive"</span>, <span class="p">"display"</span>: <span class="p">"summarized"</span>}  <span class="c"># 요약 노출. 기본값은 "omitted"(빈 문자열)</span></code></pre>
+        <ul>
+          <li>기본값 <code class="inline">"omitted"</code>이면 thinking 블록 텍스트가 빈 문자열 → 스트리밍 UI에서 긴 정적으로 보인다.</li>
+          <li>같은 모델에서 대화를 이어갈 땐 thinking 블록을 <strong>받은 그대로</strong>(빈 것 포함) 되돌려 보낸다.</li>
+          <li>다른 모델로 넘기면 Fable 5 thinking 블록은 프롬프트에서 조용히 제거된다(과금 안 됨, 스트립 불필요).</li>
+        </ul>
+
+        <h3>1.5 긴 자율 루프 — Task Budget (베타)</h3>
+        <p>에이전트 루프가 스스로 토큰을 조절하도록 예산을 준다. <code class="inline">max_tokens</code>(강제 상한)와 별개로,
+          모델이 카운트다운을 <strong>인지</strong>하고 우아하게 마무리한다.</p>
+        <pre><code>response = client.beta.messages.create(
+    model=<span class="p">"claude-fable-5"</span>,
+    max_tokens=128000,
+    betas=[<span class="p">"task-budgets-2026-03-13"</span>],
+    output_config={<span class="p">"effort"</span>: <span class="p">"xhigh"</span>, <span class="p">"task_budget"</span>: {<span class="p">"type"</span>: <span class="p">"tokens"</span>, <span class="p">"total"</span>: 64000}},  <span class="c"># 최소 20,000</span>
+    messages=[...], tools=[...],
+)</code></pre>
+
+        <h3>1.6 스트리밍</h3>
+        <p>16K 초과 출력은 스트리밍 필수(비스트리밍은 HTTP 타임아웃). <code class="inline">.stream()</code> + <code class="inline">.get_final_message()</code>.</p>
+      </section>
+
+      <section id="s2">
+        <h2 class="sec"><span class="n">02</span>하위 모델에 대한 작업 분배</h2>
+        <p>Fable 5는 비싸다(출력 $50/1M). <strong>모든 단계를 Fable 5로 돌리지 않는다.</strong> 판단·종합만 Fable 5에 두고,
+          기계적·병렬·검증 작업은 더 싼 모델에 분배한다.</p>
+
+        <h3>2.1 모델 비용·능력 매트릭스</h3>
+        <div class="tw"><table>
+          <thead><tr><th>모델</th><th>ID</th><th>입력/출력 (1M)</th><th>컨텍스트</th><th>역할</th></tr></thead>
+          <tbody>
+            <tr><td>Fable 5</td><td><code>claude-fable-5</code></td><td>$10 / $50</td><td>1M</td><td>최상위 오케스트레이터·설계·판단·종합</td></tr>
+            <tr><td>Opus 4.8</td><td><code>claude-opus-4-8</code></td><td>$5 / $25</td><td>1M</td><td>무거운 구현·리뷰. Fable 절반 가격</td></tr>
+            <tr><td>Sonnet 5</td><td><code>claude-sonnet-5</code></td><td>$3 / $15</td><td>1M</td><td>대량 구현·코딩. Opus 근접 품질</td></tr>
+            <tr><td>Haiku 4.5</td><td><code>claude-haiku-4-5</code></td><td>$1 / $5</td><td>200K</td><td>단순·고속, 분류, 기계적 수정</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>2.2 분배 원칙</h3>
+        <div class="tw"><table>
+          <thead><tr><th>작업 성격</th><th>담당 모델</th><th>effort</th></tr></thead>
+          <tbody>
+            <tr><td>계획·설계 판단·최종 종합·오케스트레이션</td><td>Fable 5</td><td>xhigh</td></tr>
+            <tr><td>무거운 구현, 복잡한 코드 작성</td><td>Opus 4.8 / Sonnet 5</td><td>high–xhigh</td></tr>
+            <tr><td>코드베이스 탐색, 다중 파일 읽기, 사용처 조사</td><td>Sonnet 5 / Haiku 4.5</td><td>low–medium</td></tr>
+            <tr><td>독립 파일 단위 기계적 수정(rename·포맷)</td><td>Haiku 4.5</td><td>low</td></tr>
+            <tr><td>반박형 검증, 리뷰, 테스트 결과 판정</td><td>Opus 4.8 (fresh context)</td><td>high–xhigh</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><div class="t">핵심</div>
+          <p>오케스트레이터는 한 모델(Fable 5)에 고정한다. 메인 루프에서 모델을 갈아끼우면 프롬프트 캐시가 깨진다.
+            값싼 하위 작업은 <strong>서브에이전트</strong>로 분리해 그쪽 모델을 바꾼다.</p></div>
+
+        <h3>2.3 방법 1 — Claude Code Agent 툴 (model 오버라이드)</h3>
+        <pre><code><span class="c"># 메인 세션: Fable 5 (또는 /model fable)</span>
+<span class="c"># 탐색은 저렴한 모델로 병렬 위임:</span>
+Agent(subagent_type=<span class="p">"Explore"</span>, model=<span class="p">"haiku"</span>,
+      prompt=<span class="p">"auth 미들웨어의 모든 호출자를 파일:라인으로 열거"</span>)
+Agent(subagent_type=<span class="p">"Explore"</span>, model=<span class="p">"sonnet"</span>,
+      prompt=<span class="p">"결제 흐름의 데이터 모델과 기존 유사 구현을 매핑"</span>)
+
+<span class="c"># 무거운 구현은 Opus로:</span>
+Agent(subagent_type=<span class="p">"general-purpose"</span>, model=<span class="p">"opus"</span>,
+      prompt=<span class="p">"설계 문서 X를 구현. 완료 기준: 테스트 A,B 통과"</span>)</code></pre>
+
+        <h3>2.4 방법 2 — API Managed Agents 멀티에이전트 (코디네이터)</h3>
+        <p>프로그래밍 방식이면 코디네이터가 다른 모델의 에이전트에 위임한다. <code class="inline">multiagent</code>는
+          <code class="inline">agents.create()</code>의 <strong>최상위 필드</strong>(툴 항목 아님).</p>
+        <pre><code><span class="c"># 하위 에이전트를 각기 다른 모델로 생성</span>
+reviewer = client.beta.agents.create(name=<span class="p">"Reviewer"</span>, model=<span class="p">"claude-opus-4-8"</span>, tools=[...])
+tester   = client.beta.agents.create(name=<span class="p">"Tester"</span>,   model=<span class="p">"claude-sonnet-5"</span>, tools=[...])
+
+<span class="c"># Fable 5 코디네이터가 로스터를 가짐</span>
+lead = client.beta.agents.create(
+    name=<span class="p">"Engineering Lead"</span>,
+    model=<span class="p">"claude-fable-5"</span>,
+    system=<span class="p">"엔지니어링을 총괄한다. 리뷰는 reviewer에, 테스트는 tester에 위임하라."</span>,
+    tools=[{<span class="p">"type"</span>: <span class="p">"agent_toolset_20260401"</span>}],
+    multiagent={<span class="p">"type"</span>: <span class="p">"coordinator"</span>, <span class="p">"agents"</span>: [reviewer.id, tester.id, {<span class="p">"type"</span>: <span class="p">"self"</span>}]},
+)
+session = client.beta.sessions.create(agent=lead.id, environment_id=env.id)</code></pre>
+
+        <h3>2.5 방법 3 — Advisor 툴 (실행기 + 조언자)</h3>
+        <p>값싼 실행기가 대부분의 토큰을 생성하고, Fable 5가 계획만 조언한다. <strong>조언자 모델은 실행기 이상</strong>이어야 한다.</p>
+        <pre><code>client.beta.messages.create(
+    model=<span class="p">"claude-sonnet-5"</span>,                    <span class="c"># 실행기 (저렴)</span>
+    max_tokens=4096,
+    betas=[<span class="p">"advisor-tool-2026-03-01"</span>],
+    tools=[{<span class="p">"type"</span>: <span class="p">"advisor_20260301"</span>, <span class="p">"name"</span>: <span class="p">"advisor"</span>, <span class="p">"model"</span>: <span class="p">"claude-fable-5"</span>}],  <span class="c"># 조언자</span>
+    messages=[...],
+)</code></pre>
+      </section>
+
+      <section id="s3">
+        <h2 class="sec"><span class="n">03</span>멀티 에이전트 오케스트레이션 규칙</h2>
+        <p>Fable 5는 병렬 서브에이전트 위임이 기본기다. <strong>비동기로 오래 사는 서브에이전트</strong>를 안정적으로 운용한다.
+          다만 기본값은 보수적이라 "언제 위임하는가"를 명시해야 최대치가 나온다.</p>
+        <ol>
+          <li><strong>비동기 위임, spawn-and-block 금지.</strong> 오래 사는 에이전트가 컨텍스트를 유지하면(캐시 절약),
+            오케스트레이터가 가장 느린 서브에이전트에 병목되지 않는다.</li>
+          <li><strong>위임은 트리거로 지시.</strong> 독립 항목으로 갈라질 때(여러 파일 읽기·테스트·후보 조사)
+            같은 턴에 병렬로 띄운다. 한 응답으로 끝나는 작업엔 만들지 않는다.</li>
+          <li><strong>검증은 분리.</strong> fresh-context 서브에이전트에 검증을 맡긴다 — 자기 검증보다 정확.</li>
+          <li><strong>결론만 회수.</strong> 파일 전문 덤프 대신 결론만 돌려받아 메인 컨텍스트를 아낀다.</li>
+          <li><strong>의도를 함께 준다.</strong> Fable 5는 요청의 <strong>이유</strong>를 알면 더 잘한다(§7.7).</li>
+          <li><strong>verbatim 전달은 툴로.</strong> 정확히 그대로 보여줄 내용은 <code class="inline">send_to_user</code> 커스텀 툴로 —
+            툴 입력은 요약되지 않는다(§7.8).</li>
+        </ol>
+        <h3>오케스트레이션 위임 프롬프트 (복붙)</h3>
+        <pre><code>독립 항목으로 갈라지는 작업(다중 파일 읽기, 다중 테스트, 다중 후보 조사)은
+순차 처리하지 말고 같은 턴에 서브에이전트를 병렬로 띄워 위임하라.
+서브에이전트가 도는 동안 너는 계속 일하라(비동기). 이탈·맥락 부족 시에만 개입하라.
+한 응답으로 끝나는 작업(눈앞 함수 리팩터링, 단일 파일 읽기)에는 만들지 마라.
+검증은 구현과 분리된 새 에이전트에 맡겨라. 서브에이전트에는 결론만 돌려받아라.</code></pre>
+      </section>
+
+      <section id="s4">
+        <h2 class="sec"><span class="n">04</span>작업 워크플로우 순서</h2>
+        <p>Fable 5의 최대 강점은 "잘 명세된 목표를 받아 길게 자율 실행"이다. 단계 진입·이탈 조건을 고정한다.</p>
+        <pre><code>0. 명세  →  1. 분석  →  2. 설계  →  3. 구현  →  4. 검증  →  5. 기록</code></pre>
+        <div class="tw"><table>
+          <thead><tr><th>단계</th><th>산출물</th><th>effort</th><th>이탈 조건 (다음 단계 진입 기준)</th></tr></thead>
+          <tbody>
+            <tr><td>0. 명세</td><td>목표·제약·완료 기준 1문서</td><td>— (사람)</td><td>"완료"를 검증 가능한 문장으로 쓸 수 있음</td></tr>
+            <tr><td>1. 분석</td><td>영향 범위 맵(파일:라인, 데이터 흐름)</td><td>high</td><td>변경이 닿는 모든 파일·호출자를 열거함</td></tr>
+            <tr><td>2. 설계</td><td>구현 계획(변경 목록 + 트레이드오프)</td><td>xhigh</td><td>각 변경이 파일 단위로 특정되고 리스크가 명시됨</td></tr>
+            <tr><td>3. 구현</td><td>코드 + 커밋 단위</td><td>xhigh</td><td>계획 전 항목 완료, 빌드/린트 통과</td></tr>
+            <tr><td>4. 검증</td><td>테스트 결과 + 실제 실행 확인</td><td>xhigh</td><td>완료 기준 전 항목이 도구 출력으로 입증됨</td></tr>
+            <tr><td>5. 기록</td><td>배운 것 1건 = 1파일 메모</td><td>low</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>4.1 단계 0 — 명세가 성패를 가른다</h3>
+        <p>Fable 5는 잘 명세된 첫 턴 하나로 최고 성능을 낸다. <strong>전체 명세를 첫 턴에 몰아넣고 high 이상으로 돌린다.</strong></p>
+        <pre><code>목표: [무엇을, 왜 — 누구를 위해]
+제약: [건드리면 안 되는 것, 기술 스택, 스타일]
+완료 기준: [검증 가능한 문장. 예: "GET /users가 200과 페이지네이션된 목록을 반환하고 테스트 X,Y 통과"]
+진행 방식: 분석 → 설계 → 구현 → 검증 순서로, 각 단계 산출물을 보인 뒤 다음으로 넘어가라.</code></pre>
+        <ul>
+          <li>Claude Code: <code class="inline">/goal</code>로 방향 설정. Managed Agents: Outcome(<code class="inline">user.define_outcome</code> + 채점 루브릭).</li>
+          <li>모호·점진적으로 여러 턴에 걸쳐 요구를 흘리면 토큰 효율과 성능이 떨어진다.</li>
+        </ul>
+
+        <h3>4.2 단계 1–2 — 분석·설계</h3>
+        <ol>
+          <li>읽기 전에 요구사항을 한 문단으로 재진술하고 확인받는다(해석 오류 차단).</li>
+          <li>관련 서브시스템별 탐색 서브에이전트를 병렬로(진입점·데이터 모델·유사 구현·테스트 현황).</li>
+          <li>영향 범위 맵을 <code class="inline">파일:라인</code>으로 작성. "이 함수의 호출자 전부"까지 추적.</li>
+          <li>설계는 대안 2–3개를 제시·비교 후 하나 추천. 설계안을 "반박하라, 빠진 엣지 케이스를 찾아라"
+            프롬프트의 별도 검증 에이전트에 넣는다(self-verification 외부화).</li>
+          <li>설계 확정 전 코드 수정 금지(Claude Code Plan Mode).</li>
+        </ol>
+
+        <h3>4.3 단계 3–4 — 구현·검증</h3>
+        <ol>
+          <li>계획 항목 단위로 위에서부터. 항목 완료마다 빌드·린트.</li>
+          <li><strong>범위 이탈 금지</strong>(§7.2 no-tidying 스니펫).</li>
+          <li><strong>진행 보고는 증거 기반</strong>(§7.3 grounded-progress 스니펫).</li>
+          <li>검증: 테스트 통과만으로 끝내지 말고 변경된 흐름을 실제로 한 번 구동(앱 실행·API 호출·CLI).</li>
+          <li>fresh-context 리뷰 에이전트에 diff를 넣되 <strong>커버리지 우선</strong>으로 시킨다(§6·§7.5).</li>
+          <li>실패 시 증상이 아니라 근본 원인을 고치고 검증 전체를 재실행.</li>
+        </ol>
+
+        <h3>4.4 단계 5 — 기록(메모리)</h3>
+        <p>Fable 5는 쓸 곳을 주면 학습을 기록해 다음 세션에 활용한다. <code class="inline">.md</code> 파일이면 충분하다.</p>
+        <div class="note"><div class="t">메모 규칙</div>
+          <p>교훈 1건 = 파일 1개, 맨 위 한 줄 요약. 수정·확정된 접근을 이유와 함께 기록.
+            저장소·이력에 이미 있는 건 저장하지 말고, 기존 메모와 겹치면 갱신, 틀린 메모는 삭제.</p></div>
+      </section>
+
+      <section id="s5">
+        <h2 class="sec"><span class="n">05</span>워크플로우에서의 활용 (Claude Code Workflow)</h2>
+        <p>Claude Code의 <code class="inline">Workflow</code> 툴은 서브에이전트를 결정론적으로 오케스트레이션한다.
+          <strong>단계별로 모델을 라우팅</strong>해 Fable 5는 판단·종합에, 값싼 모델은 대량 작업에 배치한다.</p>
+
+        <h3>5.1 파이프라인 — 단계별 모델 라우팅</h3>
+        <p><code class="inline">pipeline()</code>은 각 아이템을 모든 단계에 독립적으로 통과시킨다(단계 간 배리어 없음).</p>
+        <pre><code><span class="c">// 리뷰(값싼 모델 병렬) → 각 발견을 Fable 5가 반박 검증</span>
+const results = await pipeline(
+  changedFiles,
+  f => agent(`${f} 리뷰: 버그·회귀만`, {model: <span class="p">'sonnet'</span>, effort: <span class="p">'medium'</span>,
+             phase: <span class="p">'Review'</span>, schema: FINDINGS}),
+  review => parallel(review.findings.map(bug => () =>
+    agent(`이 발견을 반박하라(기본 refuted=true): ${bug.desc}`,
+          {model: <span class="p">'fable'</span>, effort: <span class="p">'xhigh'</span>, phase: <span class="p">'Verify'</span>, schema: VERDICT})
+      .then(v => ({...bug, verdict: v}))))
+);
+const confirmed = results.flat().filter(Boolean).filter(f => f.verdict?.isReal);</code></pre>
+
+        <h3>5.2 반박형 검증 (adversarial verify)</h3>
+        <p>Fable 5의 self-verification을 워크플로우로 외부화한다. N명의 독립 회의론자가 반박을 시도해 다수결로 판정.</p>
+        <pre><code>const votes = await parallel(Array.from({length: 3}, (_, i) => () =>
+  agent(`반박하라: ${claim}. 불확실하면 refuted=true를 기본으로.`,
+        {model: <span class="p">'fable'</span>, effort: <span class="p">'high'</span>, label: `verify-${i}`, schema: VERDICT})));
+const survives = votes.filter(Boolean).filter(v => !v.refuted).length >= 2;</code></pre>
+
+        <h3>5.3 판사 패널 (judge panel)</h3>
+        <p>서로 다른 각도(MVP-first, 리스크-first, 사용자-first)로 N개 안을 생성하고 Fable 5 판사들이 채점,
+          1등을 뼈대로 하되 2·3등의 좋은 아이디어를 접붙인다.</p>
+        <pre><code>const attempts = await parallel(ANGLES.map(a => () =>
+  agent(`${a.prompt}`, {model: <span class="p">'sonnet'</span>, effort: <span class="p">'high'</span>, schema: DESIGN})));
+const scored = await parallel(attempts.filter(Boolean).map(d => () =>
+  agent(`이 설계를 채점하라: ${d.summary}`, {model: <span class="p">'fable'</span>, effort: <span class="p">'xhigh'</span>, schema: SCORE})));</code></pre>
+
+        <h3>5.4 언제 워크플로우를 쓰나</h3>
+        <div class="tw"><table>
+          <thead><tr><th>쓴다</th><th>안 쓴다</th></tr></thead>
+          <tbody>
+            <tr><td>광범위 리뷰·감사·마이그레이션(분해→병렬 커버)</td><td>대화형 한 턴</td></tr>
+            <tr><td>독립 관점·반박 검증이 정답 신뢰도를 올릴 때</td><td>사소한 기계적 수정</td></tr>
+            <tr><td>한 컨텍스트에 안 담기는 규모</td><td>이미 검증된 작업</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><div class="t">주의</div>
+          <p>Workflow는 사용자가 명시적으로 멀티에이전트 오케스트레이션을 요청했을 때만 쓴다(대량 토큰 소비).
+            Claude Code에서 스크립트는 <code class="inline">agent()</code>/<code class="inline">pipeline()</code>/<code class="inline">parallel()</code>로 구성한다.</p></div>
+      </section>
+
+      <section id="s6">
+        <h2 class="sec"><span class="n">06</span>안티패턴 — 하지 말아야 할 것</h2>
+        <h3>6.1 파라미터 (400 에러)</h3>
+        <ul>
+          <li>❌ <code class="inline">thinking: {type: "disabled"}</code> — Fable 5는 400. <code class="inline">thinking</code>를 <strong>생략</strong>한다.</li>
+          <li>❌ <code class="inline">budget_tokens</code> — 제거됨(400). effort로 대체.</li>
+          <li>❌ <code class="inline">temperature</code> / <code class="inline">top_p</code> / <code class="inline">top_k</code> — 400. 프롬프트로 유도.</li>
+          <li>❌ 어시스턴트 프리필 — 400. <code class="inline">output_config.format</code> 또는 시스템 지시.</li>
+          <li>❌ ZDR 조직에서 호출 — 전 요청 400. 데이터 보존 30일 이상.</li>
+        </ul>
+        <h3>6.2 코드/응답 처리</h3>
+        <ul>
+          <li>❌ <code class="inline">response.content[0]</code>을 무조건 읽기 — refusal 시 content가 비어 인덱스 에러. <strong><code class="inline">stop_reason</code> 먼저 확인</strong>(§8).</li>
+          <li>❌ 툴 입력을 원문 문자열 매칭 — Unicode·슬래시 이스케이프가 다를 수 있음. <code class="inline">json.loads()</code>/<code class="inline">JSON.parse()</code>로 파싱.</li>
+          <li>❌ 16K 초과 출력을 비스트리밍 — HTTP 타임아웃. 스트리밍 사용.</li>
+          <li>❌ 이전 모델 토큰 수 재사용 — 토크나이저는 Opus 4.8과 동일하나 Opus 4.6/Sonnet/Haiku에서 오면 재측정(<code class="inline">count_tokens</code>).</li>
+        </ul>
+        <h3>6.3 프롬프트/운용 성향</h3>
+        <ul>
+          <li>❌ <strong>과도하게 규범적인 프롬프트.</strong> 이전 모델용 단계별 스캐폴딩은 Fable 5 품질을 <strong>떨어뜨린다</strong>.
+            단계 나열보다 목표·제약 진술을 선호. 마이그레이션 후 옛 스캐폴딩을 빼고 A/B.</li>
+          <li>❌ <strong>심각도 필터로 recall 손실.</strong> "심각한 것만 보고하라"를 문자 그대로 따라 발견을 누락한다.
+            검증·리뷰는 "확신 낮거나 사소해도 전부 보고, 확신도·심각도 첨부"로 시키고 뒤에서 거른다(§7.5).</li>
+          <li>❌ <strong>spawn-and-block 위임.</strong> 서브에이전트를 띄우고 멈춰 기다리지 말고 비동기로 계속 작업.</li>
+          <li>❌ <strong>컨텍스트 카운트다운 노출.</strong> 남은 토큰 수를 보이면 Fable 5가 불안해하며 새 세션을 제안하거나
+            작업을 줄인다. 명시적 예산 카운트를 UI에 띄우지 않는다.</li>
+          <li>❌ <strong>높은 effort에서 무단 정리(over-tidying).</strong> 요구 이상의 리팩터·추상화·불가능 시나리오 에러 처리.
+            no-tidying 스니펫으로 억제(§7.2).</li>
+          <li>❌ <strong>경계 밖 행동.</strong> 사용자가 설명·질문·생각 중일 때 요청 없이 수정 적용·백업 브랜치 생성·이메일 초안.
+            경계 지시로 억제(§7.4).</li>
+          <li>❌ <strong>자율 실행 중 되묻기.</strong> 사용자가 실시간으로 보지 않는데 "~할까요?"로 블록. 자율 리마인더 추가(§7.1).</li>
+          <li>❌ <code class="inline">thinking</code> 생략 = 꺼짐이라 오해 — Fable 5는 생략해도 <strong>켜짐</strong>(Opus 4.8과 반대). 끄려 하지 말 것.</li>
+        </ul>
+      </section>
+
+      <section id="s7">
+        <h2 class="sec"><span class="n">07</span>베스트 프랙티스 프롬프트 (복붙용)</h2>
+        <p>시스템 프롬프트 / CLAUDE.md / API <code class="inline">system</code>에 넣는다. Fable 5 마이그레이션 가이드의 튜닝 스니펫을 그대로 옮긴 것.</p>
+
+        <h3>7.1 자율성 (되묻기 억제)</h3>
+        <pre><code>너는 자율적으로 동작한다. 사용자는 실시간으로 보지 않으며 중간 질문에 답할 수 없다.
+요청에서 따라오는 되돌릴 수 있는 행동은 묻지 말고 진행하라. 사소한 결정(이름, 포맷,
+기본값, 동등한 접근법 중 선택)은 합리적인 것을 골라 기록만 하라. 범위 변경이나 파괴적
+작업만 먼저 확인하라. 턴을 끝내기 전 마지막 문단을 점검하라 — 그것이 계획·분석·질문·
+다음 단계 목록·미완 약속("~하겠습니다")이면 지금 도구 호출로 그 작업을 하라.
+작업이 끝났거나 사용자만 줄 수 있는 입력에 막혔을 때만 턴을 끝내라.</code></pre>
+
+        <h3>7.2 범위 (no-tidying)</h3>
+        <pre><code>작업이 요구하는 것 이상의 기능 추가·리팩터·추상화 도입을 하지 마라. 버그 수정에 주변
+정리를 끼워 넣지 마라. 가정 불가능한 시나리오의 에러 처리·폴백·검증을 추가하지 마라.
+내부 코드와 프레임워크 보장을 신뢰하라. 시스템 경계(사용자 입력·외부 API)에서만 검증하라.
+불필요한 추상화를 피하고, 반쪽짜리 구현도 남기지 마라.</code></pre>
+
+        <h3>7.3 진행 보고 (grounded progress)</h3>
+        <pre><code>진행 상황을 보고하기 전에 각 주장을 이 세션의 도구 출력과 대조하라. 증거를 가리킬 수
+있는 작업만 완료로 보고하고, 미검증 항목은 미검증이라고 명시하라. 테스트가 실패하면
+출력과 함께 실패했다고 보고하라. 건너뛴 단계는 건너뛰었다고 말하라. 완료·검증된 것은
+헤징 없이 담담히 완료라고 말하라.</code></pre>
+
+        <h3>7.4 경계 (boundaries)</h3>
+        <pre><code>사용자가 문제를 설명·질문·생각 중일 뿐 변경을 요청하지 않았다면 산출물은 너의 평가다.
+발견을 보고하고 멈춰라. 요청하기 전에는 수정을 적용하지 마라. 시스템 상태를 바꾸는
+명령(재시작·삭제·설정 편집) 전에는 증거가 그 행동을 실제로 뒷받침하는지 확인하라.</code></pre>
+
+        <h3>7.5 검증 커버리지 (심각도 필터 방지)</h3>
+        <pre><code>발견한 문제를 확신이 낮거나 사소해 보여도 전부 보고하라. 이 단계에서는 중요도·확신으로
+거르지 마라 — 필터링은 별도 단계에서 한다. 목표는 커버리지다. 각 발견에 확신도와 예상
+심각도를 붙여 하위 필터가 순위를 매기게 하라.</code></pre>
+
+        <h3>7.6 위임</h3>
+        <pre><code>독립 항목으로 갈라지는 작업(다중 파일·테스트·후보 조사)은 같은 턴에 서브에이전트를
+병렬로 띄워 비동기 위임하라. 서브에이전트가 도는 동안 계속 일하라. 한 응답으로 끝나는
+작업엔 만들지 마라. 검증은 구현과 분리된 새 에이전트에 맡기고, 결론만 돌려받아라.</code></pre>
+
+        <h3>7.7 의도 전달 (이유 프롬프트)</h3>
+        <pre><code>나는 [더 큰 작업]을 [누구]를 위해 하고 있다. 그들은 [산출물이 가능하게 하는 것]이 필요하다.
+그것을 염두에 두고: [실제 요청].</code></pre>
+
+        <h3>7.8 verbatim 전달 툴 (send_to_user)</h3>
+        <p>자율 에이전트가 사용자에게 <strong>정확히 그대로</strong> 보여줄 내용(진행 수치·직접 답·부분 결과)을 전달할 때.
+          툴 입력은 요약되지 않으므로 원문이 그대로 도착한다.</p>
+        <pre><code>{
+  <span class="p">"name"</span>: <span class="p">"send_to_user"</span>,
+  <span class="p">"description"</span>: <span class="p">"사용자에게 메시지를 그대로 표시한다. 작업 종료 전 사용자가 정확히 봐야 할 진행 상황·부분 결과·직접 답에 사용."</span>,
+  <span class="p">"input_schema"</span>: {
+    <span class="p">"type"</span>: <span class="p">"object"</span>,
+    <span class="p">"properties"</span>: { <span class="p">"message"</span>: { <span class="p">"type"</span>: <span class="p">"string"</span>, <span class="p">"description"</span>: <span class="p">"표시할 내용"</span> } },
+    <span class="p">"required"</span>: [<span class="p">"message"</span>]
+  }
+}</code></pre>
+      </section>
+
+      <section id="s8">
+        <h2 class="sec"><span class="n">08</span>Refusal 처리 (안전 분류기)</h2>
+        <p>Fable 5는 리서치 생물학·대부분 사이버보안 요청을 거부할 수 있다. 인접한 정상 작업(보안 도구·생명과학)도
+          가끔 오탐된다. 거부는 <strong>HTTP 200 + <code class="inline">stop_reason: "refusal"</code></strong>로 온다.</p>
+        <pre><code>response = client.messages.create(model=<span class="p">"claude-fable-5"</span>, max_tokens=1024, messages=[...])
+if response.stop_reason == <span class="p">"refusal"</span>:     <span class="c"># content 읽기 전에 반드시 확인</span>
+    handle_refusal()                       <span class="c"># 출력 전 거부: content 빈 배열, 과금 없음</span>
+else:                                       <span class="c"># 중간 거부: 부분 출력 과금 — 폐기</span>
+    print(response.content[0].text)</code></pre>
+        <div class="note warn"><div class="t">폴백은 opt-in이다</div>
+          <p>거부 시 요청이 그냥 멈추지 않도록, 새 <code class="inline">claude-fable-5</code> 코드는 기본으로 서버사이드
+            <code class="inline">fallbacks</code>를 넣는다(정책 거부 시 같은 호출 안에서 폴백 모델이 재처리).</p></div>
+        <pre><code>response = client.beta.messages.create(
+    model=<span class="p">"claude-fable-5"</span>,
+    max_tokens=16000,
+    betas=[<span class="p">"server-side-fallback-2026-06-01"</span>],
+    fallbacks=[{<span class="p">"model"</span>: <span class="p">"claude-opus-4-8"</span>}],
+    messages=[...],
+)</code></pre>
+        <ul>
+          <li>헤더는 정확히 <code class="inline">server-side-fallback-2026-06-01</code>. Batches API에서는 거부됨.
+            Bedrock/Vertex/Foundry 미지원 — 그쪽은 클라이언트사이드 미들웨어(<code class="inline">BetaRefusalFallbackMiddleware</code>) 사용.</li>
+          <li>최종 응답이 여전히 <code class="inline">stop_reason: "refusal"</code>이면 체인 전체가 거부한 것.</li>
+        </ul>
+      </section>
+
+      <section id="s9">
+        <h2 class="sec"><span class="n">09</span>스킬 활용 방안</h2>
+        <h3>9.1 Agent Skills — 문서·산출물 생성 (Messages API)</h3>
+        <p><code class="inline">.pptx</code>/<code class="inline">.xlsx</code>/<code class="inline">.docx</code>/<code class="inline">.pdf</code> 같은 작업별 스킬을 코드 실행
+          컨테이너에서 로드한다. <strong>Managed Agents가 아니다</strong> — <code class="inline">container</code> 파라미터 + 코드 실행 툴 + 두 베타 헤더.</p>
+        <pre><code>response = client.beta.messages.create(
+    model=<span class="p">"claude-fable-5"</span>, max_tokens=32000,
+    betas=[<span class="p">"code-execution-2025-08-25"</span>, <span class="p">"skills-2025-10-02"</span>],
+    container={<span class="p">"skills"</span>: [{<span class="p">"type"</span>: <span class="p">"anthropic"</span>, <span class="p">"skill_id"</span>: <span class="p">"pptx"</span>, <span class="p">"version"</span>: <span class="p">"latest"</span>}]},
+    tools=[{<span class="p">"type"</span>: <span class="p">"code_execution_20260521"</span>, <span class="p">"name"</span>: <span class="p">"code_execution"</span>}],
+    messages=[{<span class="p">"role"</span>: <span class="p">"user"</span>, <span class="p">"content"</span>: <span class="p">"X에 대한 3장짜리 발표자료를 만들어줘"</span>}],
+)
+<span class="c"># 생성 파일은 컨테이너에 쓰이고 응답에 file_id로 온다 → Files API로 다운로드</span>
+<span class="c"># client.beta.files.download(file_id)</span></code></pre>
+        <ul>
+          <li>프리빌트 스킬: <code class="inline">pptx</code>, <code class="inline">xlsx</code>, <code class="inline">docx</code>, <code class="inline">pdf</code>. 커스텀 스킬은 Skills API의 <code class="inline">skill_id</code>로 참조.</li>
+          <li>Fable 5는 스킬을 작업 중 학습한 것으로 즉석 갱신하는 데 능하다 — 그렇게 하도록 놔둔다.</li>
+        </ul>
+        <h3>9.2 Claude Code 스킬</h3>
+        <p>Claude Code 세션에서는 <code class="inline">Skill</code> 툴로 스킬을 호출한다(사용 가능 목록 내에서만).
+          CLAUDE.md에 §7 스니펫을 넣어 Fable 5 성향을 보정하고, 프로젝트 스킬(예: 앱 실행·검증)을 워크플로우 단계에 배치한다.</p>
+        <div class="note"><div class="t">메모리 힌트</div>
+          <p>Fable 5는 메모리를 잘 활용하므로 "몇 턴 이상 걸리는 작업 전 메모 파일을 확인하고 새 발견을 기록하라"를
+            CLAUDE.md에 명시하면 세션 간 학습이 누적된다.</p></div>
+      </section>
+
+      <section id="s10">
+        <h2 class="sec"><span class="n">10</span>요청 전 체크리스트</h2>
+        <ul class="chk">
+          <li><input type="checkbox"><span><code class="inline">thinking</code> 파라미터를 <strong>생략</strong>했는가(생략=켜짐, <code class="inline">disabled</code>는 400)</span></li>
+          <li><input type="checkbox"><span>effort: 코딩·에이전트 <code class="inline">xhigh</code> / 지능 민감 <code class="inline">high</code> / 서브에이전트·단순 <code class="inline">low</code>, 평가셋으로 sweep</span></li>
+          <li><input type="checkbox"><span><code class="inline">max_tokens</code> 충분 + 16K 초과 출력은 스트리밍</span></li>
+          <li><input type="checkbox"><span>첫 턴에 목표·제약·완료 기준을 모두 넣었는가(모호한 요청 금지)</span></li>
+          <li><input type="checkbox"><span><code class="inline">temperature</code>/<code class="inline">top_p</code>/<code class="inline">top_k</code>/<code class="inline">budget_tokens</code>/프리필 없음(모두 400)</span></li>
+          <li><input type="checkbox"><span><code class="inline">stop_reason == "refusal"</code> 처리 + 서버사이드 <code class="inline">fallbacks</code> opt-in</span></li>
+          <li><input type="checkbox"><span>조직 데이터 보존 30일 이상(ZDR 아님)</span></li>
+          <li><input type="checkbox"><span>하위 모델 분배: 판단=Fable, 구현=Opus/Sonnet, 탐색·기계=Haiku</span></li>
+          <li><input type="checkbox"><span>위임·검증 커버리지·no-tidying·경계·자율 스니펫이 system/CLAUDE.md에 포함</span></li>
+          <li><input type="checkbox"><span>긴 자율 루프에는 Task Budget(<code class="inline">task-budgets-2026-03-13</code>, ≥20K)</span></li>
+          <li><input type="checkbox"><span>과도하게 규범적인 옛 스캐폴딩 제거 후 A/B</span></li>
+        </ul>
+      </section>
+
+      <section id="appendix">
+        <h2 class="sec"><span class="n">＋</span>참고</h2>
+        <ul>
+          <li>모델 카탈로그·기능 조회: Models API — <code class="inline">client.models.retrieve("claude-fable-5")</code></li>
+          <li>Fable 5 소개: <a class="link" href="https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5.md">introducing-claude-fable-5</a></li>
+          <li>마이그레이션 가이드: <a class="link" href="https://platform.claude.com/docs/en/about-claude/models/migration-guide.md">migration-guide</a></li>
+          <li>관련 문서: <code class="inline">Opus48-Fable5-ko.md</code>(Opus 4.8을 Fable 5처럼 운용하는 역방향 지침)</li>
+          <li>본 문서의 행동 성향·프롬프트 스니펫은 Anthropic claude-api 스킬의 모델 마이그레이션 가이드(Migrating to Claude Fable 5 섹션)에 근거한다.</li>
+        </ul>
+      </section>
+
+    </main>
+  </div>
+
+  <footer>
+    <p>Claude Fable 5 실전 운용 가이드 · run-ai.kr · 검증 2026-07</p>
+  </footer>
+</div>
+
+<script>
+  // 코드 복사 버튼 주입
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copy'; btn.type = 'button'; btn.textContent = '복사';
+    btn.addEventListener('click', function () {
+      var code = pre.querySelector('code');
+      navigator.clipboard.writeText(code ? code.innerText : pre.innerText).then(function () {
+        btn.textContent = '복사됨'; setTimeout(function () { btn.textContent = '복사'; }, 1200);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 목차 스크롤 하이라이트
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        links.forEach(function (a) { a.classList.remove('active'); });
+        var a = map[e.target.id]; if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  document.querySelectorAll('main section[id]').forEach(function (s) { obs.observe(s); });
+</script>
+
+</body></html>

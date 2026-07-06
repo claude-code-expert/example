@@ -1,0 +1,425 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>초보자를 위한 GitHub 작업 흐름</title>
+<!--
+  폰트 선택 이유:
+  - Pretendard: 한글 강의 본문 가독성이 높고 자막 톤과 일치
+  - JetBrains Mono: git 명령어/브랜치명은 고정폭이라야 옵션·공백·슬래시 식별이 쉬움
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --accent:#1f6feb;        /* 단일 액센트: '지금 일어나는 동작/현재 상태'에만 사용 */
+    --ink:#16191d;
+    --muted:#5b6470;
+    --line:#dfe3e8;
+    --line-strong:#c4cbd4;
+    --bg:#ffffff;
+    --panel:#f7f8fa;
+    --node:#aeb6c0;          /* 일반 커밋 노드(무채색) */
+    --term-bg:#15181d;
+    --term-fg:#e6e9ee;
+    --mono:"JetBrains Mono","D2Coding",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Pretendard",sans-serif;
+    color:var(--ink); background:var(--bg);
+    line-height:1.6; padding:28px 20px 60px;
+  }
+  .wrap{max-width:1040px;margin:0 auto}
+
+  h1{font-size:22px;font-weight:800;letter-spacing:-0.02em}
+  .sub{color:var(--muted);font-size:14px;margin-top:6px}
+
+  /* 코스 탭 */
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:22px 0 16px;border-bottom:1px solid var(--line);padding-bottom:14px}
+  .tab{
+    font-family:var(--mono);font-size:13px;
+    border:1px solid var(--line-strong);background:var(--bg);color:var(--muted);
+    padding:8px 12px;border-radius:6px;cursor:pointer;
+    transition:color .12s,border-color .12s,background .12s;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+
+  .course-head{margin-bottom:14px}
+  .course-title{font-size:17px;font-weight:700}
+  .course-goal{font-size:13px;color:var(--muted);margin-top:3px}
+
+  /* 다이어그램 영역 */
+  .stage{
+    border:1px solid var(--line);border-radius:8px;background:var(--panel);
+    display:grid;grid-template-columns:1fr 96px 1fr;align-items:stretch;
+    overflow:hidden;
+  }
+  .zone{padding:16px}
+  .zone-head{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    color:var(--muted);text-transform:uppercase;margin-bottom:12px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .zone-head .dot{width:7px;height:7px;border:1px solid var(--line-strong);border-radius:50%}
+  .zone.remote{background:var(--bg)}
+
+  .empty{font-size:12px;color:var(--muted);font-style:italic;padding:8px 0}
+
+  /* 브랜치 행 */
+  .branch{
+    border:1px solid var(--line);background:var(--bg);border-radius:6px;
+    padding:8px 10px;margin-bottom:8px;
+    transition:border-color .12s,background .12s;
+  }
+  .zone.remote .branch{background:var(--panel)}
+  .branch.active{border-color:var(--accent)}
+  .branch-name{font-family:var(--mono);font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .branch.active .branch-name{color:var(--accent)}
+  .head-tag{
+    font-family:var(--mono);font-size:10px;font-weight:700;
+    border:1px solid var(--accent);color:var(--accent);border-radius:4px;
+    padding:1px 5px;letter-spacing:.04em;
+  }
+  .commits{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;min-height:14px}
+  .node{width:13px;height:13px;border-radius:3px;background:var(--node);transition:background .12s}
+  .node.new{background:var(--accent)}   /* 이번 단계에 추가/관련된 커밋 */
+
+  /* 중앙 흐름 표시 */
+  .flow{display:flex;flex-direction:column;align-items:center;justify-content:center;
+        border-left:1px solid var(--line);border-right:1px solid var(--line);
+        background:var(--panel);padding:10px 4px;gap:8px}
+  .flow .arrow{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--line-strong);
+               transition:color .12s}
+  .flow.act .arrow{color:var(--accent)}
+  .flow-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;
+              line-height:1.3;min-height:26px}
+  .flow.act .flow-label{color:var(--accent);font-weight:700}
+
+  /* 터미널 */
+  .term{background:var(--term-bg);border-radius:8px;margin-top:16px;padding:14px 16px;overflow-x:auto}
+  .line{font-family:var(--mono);font-size:13px;color:#8b95a3;white-space:pre;padding:2px 0;opacity:.55;
+        transition:opacity .12s,color .12s}
+  .line.cur{color:var(--term-fg);opacity:1}
+  .line .pr{color:#5b6470}            /* $ 프롬프트 */
+  .line.cur .pr{color:var(--accent)}
+  .web-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;
+           border:1px solid #3a4150;color:#aeb6c0;border-radius:4px;padding:0 5px;margin-right:8px}
+  .line.cur .web-tag{border-color:var(--accent);color:var(--accent)}
+
+  /* 설명 + 컨트롤 */
+  .desc{
+    border:1px solid var(--line);border-radius:8px;background:var(--bg);
+    padding:14px 16px;margin-top:14px;font-size:14px;min-height:62px;
+  }
+  .desc .step-no{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700;display:block;margin-bottom:4px}
+  .desc code{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);
+             border-radius:4px;padding:1px 5px}
+
+  .controls{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .btn{
+    font-family:var(--mono);font-size:13px;border:1px solid var(--line-strong);
+    background:var(--bg);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer;
+    transition:border-color .12s,color .12s,background .12s;
+  }
+  .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .btn:disabled{color:var(--line-strong);cursor:not-allowed}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{color:#fff}
+  .counter{font-family:var(--mono);font-size:13px;color:var(--muted);margin-left:auto}
+
+  .hint{font-size:12px;color:var(--muted);margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+  .hint b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>초보자를 위한 GitHub 작업 흐름</h1>
+  <p class="sub">버튼으로 한 단계씩 진행하며 <b>로컬 ↔ 원격</b>, 브랜치 이동, push·pull·merge가 어떻게 일어나는지 눈으로 확인하세요.</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="course-head">
+    <div class="course-title" id="cTitle"></div>
+    <div class="course-goal" id="cGoal"></div>
+  </div>
+
+  <div class="stage">
+    <div class="zone local">
+      <div class="zone-head"><span class="dot"></span> 로컬 (내 컴퓨터)</div>
+      <div id="localBody"></div>
+    </div>
+    <div class="flow" id="flow">
+      <div class="arrow" id="flowArrow">·</div>
+      <div class="flow-label" id="flowLabel"></div>
+    </div>
+    <div class="zone remote">
+      <div class="zone-head"><span class="dot"></span> 원격 (GitHub)</div>
+      <div id="remoteBody"></div>
+    </div>
+  </div>
+
+  <div class="term" id="term"></div>
+
+  <div class="desc">
+    <span class="step-no" id="stepNo"></span>
+    <span id="stepDesc"></span>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="prev">◀ 이전</button>
+    <button class="btn primary" id="next">다음 ▶</button>
+    <button class="btn" id="play">▶ 자동재생</button>
+    <span class="counter" id="counter"></span>
+  </div>
+
+  <p class="hint">
+    <b>색 규칙</b> — 파란색은 “지금 단계에서 일어나는 동작/현재 위치(HEAD)”만 표시합니다.
+    회색 사각형은 커밋 1개, <span class="head-tag" style="border-color:var(--accent);color:var(--accent)">HEAD</span> 는 현재 작업 중인 브랜치를 뜻합니다.
+    명령어는 모두 실제 실행으로 검증되었습니다(git 2.43 기준). <code style="font-family:var(--mono)">git switch</code> 는 구버전의 <code style="font-family:var(--mono)">git checkout</code> 에 해당합니다.
+  </p>
+</div>
+
+<script>
+/* ===== 데이터: 각 단계가 다이어그램 상태(snapshot)를 들고 있음 =====
+   local/remote: [{name, commits, head}]
+   flow: {dir:'→'|'←'|null, label, act}
+   activeBranch: 강조할 브랜치명
+   kind: 'cmd' | 'web'
+   newOn: 이번 단계에 새 커밋/변화가 생긴 브랜치(노드 강조)
+*/
+const REPO="https://github.com/user/repo.git";
+
+const courses=[
+{
+  title:"코스 1 · 최초 레포 개설 후 첫 푸시 (토큰 발급)",
+  goal:"빈 프로젝트를 GitHub에 처음 올리는 전체 과정. PAT(개인용 액세스 토큰)로 인증한다.",
+  steps:[
+    {kind:"web", cmd:'GitHub 웹에서 New repository (빈 레포, README 없이) 생성',
+     desc:"GitHub 사이트에서 빈 원격 저장소를 먼저 만든다. README/.gitignore는 체크하지 않는다(첫 푸시 충돌 방지).",
+     local:[], remote:[{name:"(아직 비어 있음)",commits:0}], flow:{dir:null,label:""}, active:null},
+    {kind:"cmd", cmd:'git init',
+     desc:"로컬 폴더를 git 저장소로 초기화. 기본 브랜치 main이 생긴다(아직 커밋 0개).",
+     local:[{name:"main",commits:0,head:true}], remote:[{name:"(비어 있음)",commits:0}], flow:{dir:null,label:""}, active:"main"},
+    {kind:"cmd", cmd:'git add .',
+     desc:"현재 폴더의 모든 파일을 스테이징(커밋 후보)에 올린다.",
+     local:[{name:"main",commits:0,head:true}], remote:[{name:"(비어 있음)",commits:0}], flow:{dir:null,label:""}, active:"main"},
+    {kind:"cmd", cmd:'git commit -m "first commit"',
+     desc:"스테이징한 내용을 커밋으로 확정. 로컬 main에 커밋 1개가 생긴다.",
+     local:[{name:"main",commits:1,head:true}], remote:[{name:"(비어 있음)",commits:0}], flow:{dir:null,label:""}, active:"main", newOn:"main"},
+    {kind:"cmd", cmd:'git branch -M main',
+     desc:"기본 브랜치 이름을 main으로 통일(master로 시작된 경우 대비).",
+     local:[{name:"main",commits:1,head:true}], remote:[{name:"(비어 있음)",commits:0}], flow:{dir:null,label:""}, active:"main"},
+    {kind:"web", cmd:'PAT 발급: Settings → Developer settings → Personal access tokens',
+     desc:"push 시 비밀번호 대신 사용할 토큰을 발급한다. 권한 범위(scope)는 repo를 선택하면 PR까지 포함된다. 토큰은 발급 직후 한 번만 보이므로 따로 저장한다.",
+     local:[{name:"main",commits:1,head:true}], remote:[{name:"(비어 있음)",commits:0}], flow:{dir:null,label:""}, active:"main"},
+    {kind:"cmd", cmd:'git remote add origin '+REPO,
+     desc:"로컬 저장소에 원격 주소를 origin이라는 별칭으로 연결한다.",
+     local:[{name:"main",commits:1,head:true}], remote:[{name:"(연결됨, 비어 있음)",commits:0}], flow:{dir:"→",label:"connect",act:false}, active:"main"},
+    {kind:"cmd", cmd:'git push -u origin main',
+     desc:"로컬 main을 원격으로 전송(push). -u 옵션으로 추적관계를 맺어 이후엔 git push만 입력해도 된다. 이때 토큰으로 인증한다.",
+     local:[{name:"main",commits:1,head:true}], remote:[{name:"main",commits:1}], flow:{dir:"→",label:"push main",act:true}, active:"main", newOn:"main", newOnRemote:"main"},
+  ]
+},
+{
+  title:"코스 2 · 원격 소스 받기 → develop 브랜치 개설 → 푸시",
+  goal:"이미 있는 원격 저장소를 내려받고, 작업용 브랜치 develop을 만들어 원격에 올린다.",
+  steps:[
+    {kind:"cmd", cmd:'git clone '+REPO,
+     desc:"원격 저장소 전체를 로컬로 복제(clone). main과 모든 이력이 한 번에 내려온다.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:"←",label:"clone",act:true}, active:"main", newOn:"main"},
+    {kind:"cmd", cmd:'cd repo',
+     desc:"복제된 프로젝트 폴더로 이동한다.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main"},
+    {kind:"cmd", cmd:'git switch -c develop',
+     desc:"main을 기준으로 develop 브랜치를 새로 만들고 그 위로 이동한다(HEAD 이동). 아직 로컬에만 존재.",
+     local:[{name:"main",commits:2,head:false},{name:"develop",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"develop", newOn:"develop"},
+    {kind:"cmd", cmd:'git push -u origin develop',
+     desc:"로컬 develop을 원격에 올려 팀이 공유할 수 있게 한다. 원격에도 develop이 생긴다.",
+     local:[{name:"main",commits:2,head:false},{name:"develop",commits:2,head:true}], remote:[{name:"main",commits:2},{name:"develop",commits:2}], flow:{dir:"→",label:"push develop",act:true}, active:"develop", newOnRemote:"develop"},
+  ]
+},
+{
+  title:"코스 3 · pull → feature/01-member 작업 → develop 머지 → 푸시",
+  goal:"최신 develop을 받고 기능 브랜치에서 작업한 뒤, develop에 합치고 원격에 반영한다.",
+  steps:[
+    {kind:"cmd", cmd:'git switch develop',
+     desc:"작업 기준이 되는 develop 브랜치로 이동한다.",
+     local:[{name:"develop",commits:2,head:true}], remote:[{name:"develop",commits:2}], flow:{dir:null,label:""}, active:"develop"},
+    {kind:"cmd", cmd:'git pull origin develop',
+     desc:"원격 develop의 최신 변경을 로컬로 당겨온다(fetch + merge). 작업 시작 전 항상 최신화한다.",
+     local:[{name:"develop",commits:3,head:true}], remote:[{name:"develop",commits:3}], flow:{dir:"←",label:"pull develop",act:true}, active:"develop", newOn:"develop"},
+    {kind:"cmd", cmd:'git switch -c feature/01-member',
+     desc:"develop을 기준으로 기능 브랜치를 만들고 이동. 실제 코드 작업은 여기서 한다.",
+     local:[{name:"develop",commits:3,head:false},{name:"feature/01-member",commits:3,head:true}], remote:[{name:"develop",commits:3}], flow:{dir:null,label:""}, active:"feature/01-member", newOn:"feature/01-member"},
+    {kind:"cmd", cmd:'git add . && git commit -m "feat: member 기능"',
+     desc:"작업한 내용을 커밋. feature 브랜치에 커밋이 쌓인다(develop은 그대로).",
+     local:[{name:"develop",commits:3,head:false},{name:"feature/01-member",commits:4,head:true}], remote:[{name:"develop",commits:3}], flow:{dir:null,label:""}, active:"feature/01-member", newOn:"feature/01-member"},
+    {kind:"cmd", cmd:'git switch develop',
+     desc:"머지 대상인 develop으로 돌아온다.",
+     local:[{name:"develop",commits:3,head:true},{name:"feature/01-member",commits:4,head:false}], remote:[{name:"develop",commits:3}], flow:{dir:null,label:""}, active:"develop"},
+    {kind:"cmd", cmd:'git merge feature/01-member',
+     desc:"feature 브랜치의 작업을 develop으로 합친다. develop이 feature의 커밋만큼 따라온다.",
+     local:[{name:"develop",commits:4,head:true},{name:"feature/01-member",commits:4,head:false}], remote:[{name:"develop",commits:3}], flow:{dir:null,label:"merge"}, active:"develop", newOn:"develop"},
+    {kind:"cmd", cmd:'git push origin develop',
+     desc:"머지된 develop을 원격에 올려 팀과 공유한다.",
+     local:[{name:"develop",commits:4,head:true},{name:"feature/01-member",commits:4,head:false}], remote:[{name:"develop",commits:4}], flow:{dir:"→",label:"push develop",act:true}, active:"develop", newOnRemote:"develop"},
+  ]
+},
+{
+  title:"코스 4 · develop 동기화 → main에 PR → 리뷰·승인",
+  goal:"develop을 최신으로 맞춘 뒤 main으로 PR을 만들고, 리뷰·승인을 거쳐 병합한다.",
+  steps:[
+    {kind:"cmd", cmd:'git switch develop && git pull origin develop',
+     desc:"PR을 올리기 전 로컬 develop을 원격 최신 상태로 맞춘다.",
+     local:[{name:"main",commits:2,head:false},{name:"develop",commits:5,head:true}], remote:[{name:"main",commits:2},{name:"develop",commits:5}], flow:{dir:"←",label:"pull develop",act:true}, active:"develop", newOn:"develop"},
+    {kind:"cmd", cmd:'git push origin develop',
+     desc:"로컬에서 추가 작업이 있었다면 원격 develop에 반영해 PR 기준을 일치시킨다.",
+     local:[{name:"main",commits:2,head:false},{name:"develop",commits:5,head:true}], remote:[{name:"main",commits:2},{name:"develop",commits:5}], flow:{dir:"→",label:"push develop",act:true}, active:"develop"},
+    {kind:"web", cmd:'GitHub: New Pull Request — base: main ← compare: develop',
+     desc:"웹에서 develop의 변경을 main에 합치는 PR을 생성한다. 제목/설명에 무엇을 왜 바꿨는지 적는다.",
+     local:[{name:"main",commits:2,head:false},{name:"develop",commits:5,head:true}], remote:[{name:"main",commits:2},{name:"develop ▶ main (PR)",commits:5}], flow:{dir:"→",label:"PR",act:true}, active:"develop"},
+    {kind:"web", cmd:'리뷰어가 코드 리뷰 후 Approve(승인)',
+     desc:"동료가 변경 내용을 검토하고 댓글을 남기거나 승인한다. 승인 전에는 보통 머지 버튼이 막혀 있다.",
+     local:[{name:"main",commits:2,head:false},{name:"develop",commits:5,head:true}], remote:[{name:"main",commits:2},{name:"develop ▶ main (승인됨)",commits:5}], flow:{dir:"→",label:"review",act:true}, active:"develop"},
+    {kind:"web", cmd:'Merge pull request',
+     desc:"승인 후 PR을 병합한다. 원격 main이 develop의 변경을 받아 갱신된다.",
+     local:[{name:"main",commits:2,head:false},{name:"develop",commits:5,head:true}], remote:[{name:"main",commits:5},{name:"develop",commits:5}], flow:{dir:"→",label:"merge PR",act:true}, active:"main", newOnRemote:"main"},
+    {kind:"cmd", cmd:'git switch main && git pull origin main',
+     desc:"병합된 결과를 로컬 main에도 내려받아 동기화한다.",
+     local:[{name:"main",commits:5,head:true},{name:"develop",commits:5,head:false}], remote:[{name:"main",commits:5},{name:"develop",commits:5}], flow:{dir:"←",label:"pull main",act:true}, active:"main", newOn:"main"},
+  ]
+},
+{
+  title:"코스 5 · 동료와 다른 브랜치에서 작업 후 develop에 머지",
+  goal:"나는 feature/01-member, 동료는 feature/02-board에서 각자 작업한 뒤 develop에 합친다.",
+  steps:[
+    {kind:"cmd", cmd:'(나) git switch -c feature/01-member → 작업 → push',
+     desc:"나는 회원 기능 브랜치에서 작업하고 원격에 올린다.",
+     local:[{name:"develop",commits:5,head:false},{name:"feature/01-member",commits:6,head:true}], remote:[{name:"develop",commits:5},{name:"feature/01-member",commits:6}], flow:{dir:"→",label:"push",act:true}, active:"feature/01-member", newOn:"feature/01-member", newOnRemote:"feature/01-member"},
+    {kind:"cmd", cmd:'(동료) git switch -c feature/02-board → 작업 → push',
+     desc:"동료는 게시판 기능 브랜치에서 따로 작업하고 원격에 올린다. 서로 다른 브랜치라 충돌 없이 동시 진행된다.",
+     local:[{name:"develop",commits:5,head:false},{name:"feature/01-member",commits:6,head:true}], remote:[{name:"develop",commits:5},{name:"feature/01-member",commits:6},{name:"feature/02-board",commits:6}], flow:{dir:"→",label:"동료 push",act:true}, active:"feature/01-member", newOnRemote:"feature/02-board"},
+    {kind:"cmd", cmd:'(나) git switch develop && git pull origin develop',
+     desc:"머지 전 develop을 최신화한다.",
+     local:[{name:"develop",commits:5,head:true},{name:"feature/01-member",commits:6,head:false}], remote:[{name:"develop",commits:5},{name:"feature/01-member",commits:6},{name:"feature/02-board",commits:6}], flow:{dir:"←",label:"pull develop",act:true}, active:"develop"},
+    {kind:"cmd", cmd:'(나) git merge feature/01-member && git push origin develop',
+     desc:"내 작업을 develop에 합치고 원격에 올린다. 원격 develop이 갱신된다.",
+     local:[{name:"develop",commits:6,head:true},{name:"feature/01-member",commits:6,head:false}], remote:[{name:"develop",commits:6},{name:"feature/02-board",commits:6}], flow:{dir:"→",label:"push develop",act:true}, active:"develop", newOn:"develop", newOnRemote:"develop"},
+    {kind:"cmd", cmd:'(나) git pull origin develop  ← 동료 머지 반영',
+     desc:"동료가 feature/02-board를 develop에 머지한 뒤, 나는 pull로 동료의 변경까지 받아온다. 같은 파일을 동시에 고쳤다면 이때 충돌(conflict)이 날 수 있고, 해결 후 커밋하면 된다.",
+     local:[{name:"develop",commits:7,head:true},{name:"feature/01-member",commits:6,head:false}], remote:[{name:"develop",commits:7}], flow:{dir:"←",label:"pull develop",act:true}, active:"develop", newOn:"develop"},
+  ]
+},
+{
+  title:"코스 6 · 두 개발자가 main에서 각자 브랜치 → main에 머지",
+  goal:"개발자 A·B가 같은 main을 기준으로 각자 기능 브랜치를 만들어 작업하고, 차례로 main에 합친다. 두 번째 머지 전엔 반드시 pull로 상대 변경을 먼저 받는다.",
+  steps:[
+    {kind:"cmd", cmd:'(A) git switch main && git pull origin main',
+     desc:"개발자 A가 분기 기준이 될 최신 main을 확보한다. 모든 작업은 최신 main에서 시작한다.",
+     local:[{name:"main",commits:3,head:true}], remote:[{name:"main",commits:3}], flow:{dir:"←",label:"pull main",act:true}, active:"main", newOn:"main"},
+    {kind:"cmd", cmd:'(A) git switch -c feature/login → 작업 → commit → push',
+     desc:"A는 main에서 로그인 기능 브랜치를 만들어 작업하고 원격에 올린다.",
+     local:[{name:"main",commits:3,head:false},{name:"feature/login",commits:4,head:true}], remote:[{name:"main",commits:3},{name:"feature/login",commits:4}], flow:{dir:"→",label:"A push",act:true}, active:"feature/login", newOn:"feature/login", newOnRemote:"feature/login"},
+    {kind:"cmd", cmd:'(B) git switch main && git pull origin main',
+     desc:"개발자 B도 같은 main을 기준으로 작업을 시작한다. A와 동일한 시작점이다.",
+     local:[{name:"main",commits:3,head:true},{name:"feature/payment",commits:0,head:false}], remote:[{name:"main",commits:3},{name:"feature/login",commits:4}], flow:{dir:"←",label:"pull main",act:true}, active:"main"},
+    {kind:"cmd", cmd:'(B) git switch -c feature/payment → 작업 → commit → push',
+     desc:"B는 main에서 결제 기능 브랜치를 만들어 작업하고 원격에 올린다. A와 다른 브랜치라 서로 간섭 없이 동시 진행된다.",
+     local:[{name:"main",commits:3,head:false},{name:"feature/payment",commits:4,head:true}], remote:[{name:"main",commits:3},{name:"feature/login",commits:4},{name:"feature/payment",commits:4}], flow:{dir:"→",label:"B push",act:true}, active:"feature/payment", newOn:"feature/payment", newOnRemote:"feature/payment"},
+    {kind:"cmd", cmd:'(A) git switch main && git merge feature/login && git push origin main',
+     desc:"A가 먼저 자신의 기능을 main에 합치고 원격에 올린다. 원격 main이 로그인 기능만큼 앞선다.",
+     local:[{name:"main",commits:4,head:true},{name:"feature/login",commits:4,head:false}], remote:[{name:"main",commits:4},{name:"feature/payment",commits:4}], flow:{dir:"→",label:"A merge→main",act:true}, active:"main", newOn:"main", newOnRemote:"main"},
+    {kind:"cmd", cmd:'(B) git switch main && git pull origin main',
+     desc:"핵심 단계. B는 머지하기 전에 pull로 A가 올린 main 변경을 먼저 받아온다. 이 단계를 건너뛰면 push가 거부(rejected)된다.",
+     local:[{name:"main",commits:4,head:true},{name:"feature/payment",commits:4,head:false}], remote:[{name:"main",commits:4},{name:"feature/payment",commits:4}], flow:{dir:"←",label:"pull main",act:true}, active:"main", newOn:"main"},
+    {kind:"cmd", cmd:'(B) git merge feature/payment && git push origin main',
+     desc:"B가 결제 기능을 main에 합쳐 올린다. 이제 main에 A·B 두 기능이 모두 들어간다. 같은 파일을 둘 다 고쳤다면 이 머지에서 충돌이 나며, 해결 후 커밋하면 된다.",
+     local:[{name:"main",commits:5,head:true},{name:"feature/payment",commits:4,head:false}], remote:[{name:"main",commits:5}], flow:{dir:"→",label:"B merge→main",act:true}, active:"main", newOn:"main", newOnRemote:"main"},
+  ]
+},
+];
+
+let ci=0, si=0, timer=null;
+
+const $=id=>document.getElementById(id);
+
+function renderTabs(){
+  $("tabs").innerHTML=courses.map((c,i)=>
+    `<button class="tab ${i===ci?'on':''}" data-i="${i}">코스 ${i+1}</button>`).join("");
+  $("tabs").querySelectorAll(".tab").forEach(b=>{
+    b.onclick=()=>{stop();ci=+b.dataset.i;si=0;render();};
+  });
+}
+
+function branchHTML(b, active, newOn){
+  if(b.commits===0 && /비어|아직|연결/.test(b.name)){
+    return `<div class="branch"><div class="branch-name" style="color:var(--muted);font-weight:500">${b.name}</div></div>`;
+  }
+  const isAct=b.name===active;
+  let nodes="";
+  for(let i=0;i<b.commits;i++){
+    const isNew = (b.name===newOn) && i>=b.commits-1; // 마지막 커밋 강조
+    nodes+=`<span class="node ${isNew?'new':''}"></span>`;
+  }
+  const head = b.head ? `<span class="head-tag">HEAD</span>` : "";
+  return `<div class="branch ${isAct?'active':''}">
+    <div class="branch-name">${b.name} ${head}</div>
+    <div class="commits">${nodes||'<span style="font-size:11px;color:var(--muted)">커밋 0</span>'}</div>
+  </div>`;
+}
+
+function render(){
+  const c=courses[ci], s=c.steps[si];
+  renderTabs();
+  $("cTitle").textContent=c.title;
+  $("cGoal").textContent=c.goal;
+
+  // 로컬/원격
+  $("localBody").innerHTML = s.local.length
+    ? s.local.map(b=>branchHTML(b,s.active,s.newOn)).join("")
+    : `<div class="empty">아직 로컬 저장소가 없습니다</div>`;
+  $("remoteBody").innerHTML = s.remote.map(b=>branchHTML(b,null,s.newOnRemote)).join("");
+
+  // 흐름
+  const f=s.flow||{};
+  const flowEl=$("flow");
+  $("flowArrow").textContent = f.dir==="→"?"→":(f.dir==="←"?"←":(f.label==="merge"?"⛙":"·"));
+  $("flowLabel").textContent = f.label||"";
+  flowEl.classList.toggle("act", !!f.act);
+
+  // 터미널 (코스 전체 명령어, 현재 줄 강조)
+  $("term").innerHTML = c.steps.map((st,idx)=>{
+    const cur=idx===si?"cur":"";
+    if(st.kind==="web"){
+      return `<div class="line ${cur}"><span class="web-tag">WEB</span>${st.cmd}</div>`;
+    }
+    return `<div class="line ${cur}"><span class="pr">$ </span>${st.cmd}</div>`;
+  }).join("");
+
+  // 설명
+  $("stepNo").textContent=`STEP ${si+1} / ${c.steps.length}`;
+  $("stepDesc").textContent=s.desc;
+
+  // 컨트롤
+  $("prev").disabled = si===0;
+  $("next").disabled = si===c.steps.length-1;
+  $("counter").textContent=`코스 ${ci+1} · 단계 ${si+1}/${c.steps.length}`;
+}
+
+function next(){ const c=courses[ci]; if(si<c.steps.length-1){si++;render();} else stop(); }
+function prev(){ if(si>0){si--;render();} }
+function stop(){ if(timer){clearInterval(timer);timer=null;$("play").textContent="▶ 자동재생";$("play").classList.remove("primary");} }
+function play(){
+  if(timer){stop();return;}
+  $("play").textContent="❚❚ 정지"; $("play").classList.add("primary");
+  timer=setInterval(()=>{ const c=courses[ci]; if(si>=c.steps.length-1){stop();} else {si++;render();} },1800);
+}
+
+$("next").onclick=next; $("prev").onclick=prev; $("play").onclick=play;
+document.addEventListener("keydown",e=>{ if(e.key==="ArrowRight")next(); if(e.key==="ArrowLeft")prev(); });
+
+render();
+</script>
+
+
+<div class="cc-watermark-layer" aria-hidden="true" style="position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.22; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27360%27 height=%27240%27%3E%3Ctext x=%2715%27 y=%27130%27 font-family=%27monospace%27 font-size=%2716%27 fill=%27%2394A3B8%27 transform=%27rotate%28-30 180 120%29%27%3Erun-ai.kr%20%20%20brewnet.dev@gmail.com%3C/text%3E%3C/svg%3E&quot;); background-repeat:repeat;"></div></body></html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>초보자를 위한 GitHub 되돌리기 흐름</title>
+<!--
+  폰트 선택 이유:
+  - Pretendard: 한글 강의 본문 가독성이 높고 자막 톤과 일치
+  - JetBrains Mono: git 명령어/해시는 고정폭이라야 옵션·공백·슬래시 식별이 쉬움
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --accent:#1f6feb;        /* 단일 액센트: '지금 일어나는 동작/현재 상태'에만 사용 */
+    --ink:#16191d;
+    --muted:#5b6470;
+    --line:#dfe3e8;
+    --line-strong:#c4cbd4;
+    --bg:#ffffff;
+    --panel:#f7f8fa;
+    --node:#aeb6c0;          /* 일반 커밋 노드(무채색) */
+    --node-gone:#e3e6ea;     /* 되돌려져 사라진 커밋(흐리게) */
+    --term-bg:#15181d;
+    --term-fg:#e6e9ee;
+    --mono:"JetBrains Mono","D2Coding",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Pretendard",sans-serif;
+    color:var(--ink); background:var(--bg);
+    line-height:1.6; padding:28px 20px 60px;
+  }
+  .wrap{max-width:1040px;margin:0 auto}
+
+  h1{font-size:22px;font-weight:800;letter-spacing:-0.02em}
+  .sub{color:var(--muted);font-size:14px;margin-top:6px}
+
+  /* 코스 탭 */
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:22px 0 16px;border-bottom:1px solid var(--line);padding-bottom:14px}
+  .tab{
+    font-family:var(--mono);font-size:13px;
+    border:1px solid var(--line-strong);background:var(--bg);color:var(--muted);
+    padding:8px 12px;border-radius:6px;cursor:pointer;
+    transition:color .12s,border-color .12s,background .12s;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+
+  .course-head{margin-bottom:14px}
+  .course-title{font-size:17px;font-weight:700}
+  .course-goal{font-size:13px;color:var(--muted);margin-top:3px}
+
+  /* 다이어그램 영역 */
+  .stage{
+    border:1px solid var(--line);border-radius:8px;background:var(--panel);
+    display:grid;grid-template-columns:1fr 96px 1fr;align-items:stretch;
+    overflow:hidden;
+  }
+  .zone{padding:16px}
+  .zone-head{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    color:var(--muted);text-transform:uppercase;margin-bottom:12px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .zone-head .dot{width:7px;height:7px;border:1px solid var(--line-strong);border-radius:50%}
+  .zone.remote{background:var(--bg)}
+
+  .empty{font-size:12px;color:var(--muted);font-style:italic;padding:8px 0}
+
+  /* 브랜치 행 */
+  .branch{
+    border:1px solid var(--line);background:var(--bg);border-radius:6px;
+    padding:8px 10px;margin-bottom:8px;
+    transition:border-color .12s,background .12s;
+  }
+  .zone.remote .branch{background:var(--panel)}
+  .branch.active{border-color:var(--accent)}
+  .branch-name{font-family:var(--mono);font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .branch.active .branch-name{color:var(--accent)}
+  .head-tag{
+    font-family:var(--mono);font-size:10px;font-weight:700;
+    border:1px solid var(--accent);color:var(--accent);border-radius:4px;
+    padding:1px 5px;letter-spacing:.04em;
+  }
+  .commits{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;min-height:14px;align-items:center}
+  .node{width:13px;height:13px;border-radius:3px;background:var(--node);transition:background .12s}
+  .node.new{background:var(--accent)}          /* 이번 단계에 추가/관련된 커밋 */
+  .node.gone{background:var(--node-gone);border:1px dashed var(--line-strong);width:11px;height:11px} /* 되돌려져 사라진 커밋 */
+
+  /* 변경(워킹 트리) 상태 표시 — reset 모드 차이를 눈으로 구분 */
+  .wstate{font-family:var(--mono);font-size:10.5px;margin-top:7px;color:var(--muted);
+          display:flex;align-items:center;gap:6px}
+  .wstate .pip{width:7px;height:7px;border-radius:2px;border:1px solid var(--line-strong);background:var(--bg)}
+  .wstate.staged{color:var(--accent)} .wstate.staged .pip{background:var(--accent);border-color:var(--accent)}
+  .wstate.unstaged .pip{background:var(--node)}
+  .wstate.conflict{color:var(--ink);font-weight:700} .wstate.conflict .pip{background:#16191d;border-color:#16191d}
+
+  /* 중앙 흐름 표시 */
+  .flow{display:flex;flex-direction:column;align-items:center;justify-content:center;
+        border-left:1px solid var(--line);border-right:1px solid var(--line);
+        background:var(--panel);padding:10px 4px;gap:8px}
+  .flow .arrow{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--line-strong);
+               transition:color .12s}
+  .flow.act .arrow{color:var(--accent)}
+  .flow-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;
+              line-height:1.3;min-height:26px}
+  .flow.act .flow-label{color:var(--accent);font-weight:700}
+
+  /* 터미널 */
+  .term{background:var(--term-bg);border-radius:8px;margin-top:16px;padding:14px 16px;overflow-x:auto}
+  .line{font-family:var(--mono);font-size:13px;color:#8b95a3;white-space:pre;padding:2px 0;opacity:.55;
+        transition:opacity .12s,color .12s}
+  .line.cur{color:var(--term-fg);opacity:1}
+  .line .pr{color:#5b6470}            /* $ 프롬프트 */
+  .line.cur .pr{color:var(--accent)}
+  .web-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;
+           border:1px solid #3a4150;color:#aeb6c0;border-radius:4px;padding:0 5px;margin-right:8px}
+  .line.cur .web-tag{border-color:var(--accent);color:var(--accent)}
+
+  /* 설명 + 컨트롤 */
+  .desc{
+    border:1px solid var(--line);border-radius:8px;background:var(--bg);
+    padding:14px 16px;margin-top:14px;font-size:14px;min-height:62px;
+  }
+  .desc .step-no{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700;display:inline-block;margin-bottom:4px}
+  .desc .danger-tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;
+        border:1px solid var(--line-strong);color:var(--ink);border-radius:4px;padding:1px 6px;margin-left:8px}
+  .desc code{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);
+             border-radius:4px;padding:1px 5px}
+
+  .controls{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .btn{
+    font-family:var(--mono);font-size:13px;border:1px solid var(--line-strong);
+    background:var(--bg);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer;
+    transition:border-color .12s,color .12s,background .12s;
+  }
+  .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .btn:disabled{color:var(--line-strong);cursor:not-allowed}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{color:#fff}
+  .counter{font-family:var(--mono);font-size:13px;color:var(--muted);margin-left:auto}
+
+  .hint{font-size:12px;color:var(--muted);margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+  .hint b{color:var(--ink)}
+  .hint code{font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>초보자를 위한 GitHub 되돌리기 흐름</h1>
+  <p class="sub">버튼으로 한 단계씩 진행하며 <b>커밋·푸시·머지·소스</b>를 어떻게 안전하게 되돌리는지 눈으로 확인하세요. 명령은 모두 실제 실행으로 검증했습니다(git 2.43 기준).</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="course-head">
+    <div class="course-title" id="cTitle"></div>
+    <div class="course-goal" id="cGoal"></div>
+  </div>
+
+  <div class="stage">
+    <div class="zone local">
+      <div class="zone-head"><span class="dot"></span> 로컬 (내 컴퓨터)</div>
+      <div id="localBody"></div>
+    </div>
+    <div class="flow" id="flow">
+      <div class="arrow" id="flowArrow">·</div>
+      <div class="flow-label" id="flowLabel"></div>
+    </div>
+    <div class="zone remote">
+      <div class="zone-head"><span class="dot"></span> 원격 (GitHub)</div>
+      <div id="remoteBody"></div>
+    </div>
+  </div>
+
+  <div class="term" id="term"></div>
+
+  <div class="desc">
+    <span class="step-no" id="stepNo"></span><span class="danger-tag" id="dangerTag" style="display:none"></span>
+    <div id="stepDesc" style="margin-top:2px"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="prev">◀ 이전</button>
+    <button class="btn primary" id="next">다음 ▶</button>
+    <button class="btn" id="play">▶ 자동재생</button>
+    <span class="counter" id="counter"></span>
+  </div>
+
+  <p class="hint">
+    <b>읽는 법</b> — 회색 사각형은 커밋 1개, 파란 사각형은 “이번 단계에서 생긴/관련된 커밋”,
+    <span class="node gone" style="display:inline-block;vertical-align:middle"></span> 점선 사각형은 “되돌려져 사라진 커밋”입니다.
+    파란 글씨는 “지금 일어나는 동작/현재 위치(HEAD)”만 표시합니다.
+    <br><b>안전 원칙</b> — <code>reset --hard</code>·<code>--force</code>는 <b>아직 push 안 한 로컬</b>에서만. 이미 원격에 올라갔고 협업 중이라면 이력을 보존하는 <code>git revert</code>를 쓰세요.
+  </p>
+</div>
+
+<script>
+/* ===== 데이터: 각 단계가 다이어그램 상태(snapshot)를 들고 있음 =====
+   local/remote: [{name, commits, head, gone}]   // gone: 점선으로 표시할 '사라진' 커밋 수
+   flow: {dir:'→'|'←'|null, label, act}
+   active: 강조할 브랜치명
+   kind: 'cmd' | 'web'
+   newOn / newOnRemote: 이번 단계에 변화가 생긴 브랜치(노드 강조)
+   wstate: 'staged' | 'unstaged' | 'clean' | 'conflict' | null  // active 브랜치의 변경 상태
+   danger: 주의 태그 텍스트(있으면 표시)
+*/
+const courses=[
+{
+  title:"코스 1 · 커밋 되돌리기 (아직 push 안 한 로컬 커밋)",
+  goal:"로컬에만 있는 잘못된 커밋을 취소한다. reset의 세 모드(soft·mixed·hard)와 amend의 차이를 비교한다. 세 reset 단계는 모두 '커밋 직후'에서 시작한다고 보세요.",
+  steps:[
+    {kind:"cmd", cmd:'git log --oneline   # 현재: 잘못된 c3 까지 커밋됨 (원격엔 c2 까지)',
+     desc:"상황: 로컬 main에 커밋 3개(c1·c2·c3). 방금 만든 c3가 잘못됐다. 아직 push하지 않았으므로 안전하게 되돌릴 수 있다.",
+     local:[{name:"main",commits:3,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git reset --soft HEAD~1',
+     desc:"커밋만 취소하고 변경 내용은 그대로 스테이징에 남긴다. <code>git commit</code>만 다시 하면 되므로 메시지나 분할만 고치고 싶을 때 쓴다.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", newOn:"main", wstate:"staged", goneOn:"main", goneCount:1},
+    {kind:"cmd", cmd:'git reset --mixed HEAD~1   # 옵션 생략 시 기본값',
+     desc:"커밋을 취소하고 변경을 <code>git add</code> 이전(작업트리)으로 되돌린다. 다시 add부터 시작하고 싶을 때. 옵션을 생략한 <code>git reset HEAD~1</code>이 곧 mixed다.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", newOn:"main", wstate:"unstaged", goneOn:"main", goneCount:1},
+    {kind:"cmd", cmd:'git reset --hard HEAD~1',
+     desc:"커밋과 변경 내용을 <b>모두 폐기</b>한다. 작업트리가 깨끗해진다. 되돌릴 수 없으니 push 안 한 로컬에서, 정말 버려도 되는 작업에만 사용한다.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", newOn:"main", wstate:"clean", goneOn:"main", goneCount:1, danger:"작업 손실 · 복구 불가"},
+    {kind:"cmd", cmd:'git commit --amend -m "올바른 메시지"',
+     desc:"커밋을 지우지 않고 <b>마지막 커밋 자체를 교체</b>한다. 메시지 오타나 빠뜨린 파일(<code>git add</code> 후 amend)을 고칠 때. 커밋 개수는 그대로(3개)지만 해시는 새로 바뀐다.",
+     local:[{name:"main",commits:3,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", newOn:"main", wstate:"clean", danger:"해시 변경 · push 후엔 주의"},
+  ]
+},
+{
+  title:"코스 2 · 푸시 되돌리기 (이미 원격에 올라간 커밋)",
+  goal:"잘못된 커밋이 원격에 이미 push됐다. 협업 중이라면 이력을 바꾸지 말고 revert로 '되돌리는 새 커밋'을 만든다. force는 혼자 쓰는 브랜치에서 최후수단.",
+  steps:[
+    {kind:"cmd", cmd:'git log --oneline   # 로컬·원격 모두 잘못된 c3 까지 push됨',
+     desc:"상황: c3를 원격에 push한 뒤 잘못됐음을 발견. 동료가 이미 c3를 pull했을 수 있으므로 이력을 지우는 reset/force는 위험하다.",
+     local:[{name:"main",commits:3,head:true}], remote:[{name:"main",commits:3}], flow:{dir:null,label:""}, active:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git revert HEAD   # c3 효과를 취소하는 새 커밋 생성',
+     desc:"c3가 한 변경을 거꾸로 적용하는 <b>새 커밋(c4)</b>을 만든다. 기존 이력(c1·c2·c3)은 그대로 보존되므로 협업 환경에서 안전하다. 충돌이 나면 해결 후 커밋한다.",
+     local:[{name:"main",commits:4,head:true}], remote:[{name:"main",commits:3}], flow:{dir:null,label:""}, active:"main", newOn:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git push origin main',
+     desc:"되돌리기 커밋(c4)을 원격에 올린다. 동료들은 평범한 pull로 받으면 되고, 이력 충돌이 없다. <b>협업 시 권장 방식.</b>",
+     local:[{name:"main",commits:4,head:true}], remote:[{name:"main",commits:4}], flow:{dir:"→",label:"push",act:true}, active:"main", newOnRemote:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git reset --hard HEAD~1   # (대안 경로) 혼자 쓰는 브랜치에서만',
+     desc:"여기부터는 위 revert와 별개의 대안이다. 처음의 'c3가 push된 상태'에서 로컬 이력 자체를 c2로 되돌린다(c3 제거). 협업 브랜치에서는 금지하고, 혼자 쓰는 브랜치에서 원격까지 정리할 때만 다음 단계와 함께 쓴다.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:3}], flow:{dir:null,label:""}, active:"main", goneOn:"main", goneCount:1, wstate:"clean", danger:"이력 변경 · 협업 브랜치 금지"},
+    {kind:"cmd", cmd:'git push --force-with-lease origin main',
+     desc:"원격을 강제로 c2까지 덮어쓴다. <code>--force</code> 대신 <code>--force-with-lease</code>를 쓰면, 내가 모르는 새 변경이 원격에 있을 때 push를 막아 동료 작업 유실을 예방한다.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:"→",label:"force push",act:true}, active:"main", newOnRemote:"main", wstate:"clean", danger:"원격 이력 덮어쓰기"},
+  ]
+},
+{
+  title:"코스 3 · 머지 취소 (충돌 중단 · 완료 머지 · push된 머지)",
+  goal:"머지는 '어느 시점이냐'에 따라 취소 방법이 다르다. ①충돌로 진행 중 ②완료(push 전) ③이미 push됨 — 세 경우를 차례로 본다.",
+  steps:[
+    {kind:"cmd", cmd:'git merge feature   # → CONFLICT 발생, 머지 진행 중 멈춤',
+     desc:"①충돌 상황: main에 feature를 머지하다 같은 파일을 동시에 고쳐 충돌이 났다. 머지가 '진행 중' 상태로 멈춰 있다.",
+     local:[{name:"main",commits:3,head:true},{name:"feature",commits:3,head:false}], remote:[{name:"main",commits:3}], flow:{dir:null,label:"merge"}, active:"main", wstate:"conflict"},
+    {kind:"cmd", cmd:'git merge --abort',
+     desc:"진행 중이던 머지를 통째로 중단하고 <b>머지 시작 직전 상태</b>로 되돌린다. 작업트리가 깨끗해진다. 충돌 해결이 꼬였을 때 가장 먼저 떠올릴 명령.",
+     local:[{name:"main",commits:3,head:true},{name:"feature",commits:3,head:false}], remote:[{name:"main",commits:3}], flow:{dir:null,label:""}, active:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git merge --no-ff feature   # 머지 커밋 생성 (아직 push 전)',
+     desc:"②완료 상황: 충돌 없이 머지가 끝나 머지 커밋이 생겼다. 그런데 머지 자체가 실수였다. 아직 push하지 않은 상태다.",
+     local:[{name:"main",commits:4,head:true},{name:"feature",commits:3,head:false}], remote:[{name:"main",commits:3}], flow:{dir:null,label:"merged"}, active:"main", newOn:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git reset --hard ORIG_HEAD',
+     desc:"<code>ORIG_HEAD</code>는 머지 직전 위치를 git이 자동 기록해 둔 표식이다. 이 한 줄이면 머지 커밋 이전으로 정확히 복귀한다. <b>push 전</b>에만 안전하게 쓴다.",
+     local:[{name:"main",commits:3,head:true},{name:"feature",commits:3,head:false}], remote:[{name:"main",commits:3}], flow:{dir:null,label:""}, active:"main", goneOn:"main", goneCount:1, wstate:"clean", danger:"push 전에만 안전"},
+    {kind:"cmd", cmd:'git revert -m 1 <merge-commit> && git push',
+     desc:"③이미 push된 머지: 이력을 지울 수 없으므로 머지를 되돌리는 새 커밋을 만든다. <code>-m 1</code>은 '머지의 첫 번째 부모(=main)를 기준으로 되돌린다'는 뜻이다. 머지 커밋엔 부모가 둘이라 기준 지정이 필수.",
+     local:[{name:"main",commits:5,head:true},{name:"feature",commits:3,head:false}], remote:[{name:"main",commits:5}], flow:{dir:"→",label:"revert→push",act:true}, active:"main", newOn:"main", newOnRemote:"main", wstate:"clean"},
+  ]
+},
+{
+  title:"코스 4 · 특정 위치로 소스 되돌리기 (시점 복귀 · 복구 · 파일 단위)",
+  goal:"원하는 과거 커밋으로 되돌리고, 실수로 지운 커밋은 reflog로 되살린다. 파일 하나만 과거 상태로 가져오는 법도 본다.",
+  steps:[
+    {kind:"cmd", cmd:'git log --oneline   # c1..c5, "c2 시점으로 되돌리고 싶다"',
+     desc:"상황: 커밋 5개가 쌓였는데 c3 이후 작업이 잘못됐다. c2 시점으로 통째로 되돌리고 싶다. (아직 push 안 한 로컬 가정)",
+     local:[{name:"main",commits:5,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git reset --hard <c2-hash>',
+     desc:"HEAD를 지정한 커밋(c2)으로 이동시키고 작업트리도 그 시점으로 맞춘다. c3·c4·c5가 로컬 이력에서 사라진다. 되돌릴 수 없으니 신중히.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", goneOn:"main", goneCount:3, wstate:"clean", danger:"c3·c4·c5 사라짐"},
+    {kind:"cmd", cmd:'git reflog   # 사라진 c5 까지 모든 HEAD 이동 기록 확인',
+     desc:"reset으로 사라진 듯 보여도 git은 모든 HEAD 이동을 <b>reflog</b>에 남긴다. 여기서 c5의 해시를 찾을 수 있다. \"실수로 reset --hard 했다\"의 구원투수.",
+     local:[{name:"main",commits:2,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", goneOn:"main", goneCount:3, wstate:"clean"},
+    {kind:"cmd", cmd:'git reset --hard <reflog-hash>   # 실수로 지운 c5 복구',
+     desc:"reflog에서 찾은 해시로 다시 reset하면 c5까지 그대로 <b>복구</b>된다. reflog 덕분에 reset --hard도 어느 정도 되돌릴 수 있다(기본 보존 90일).",
+     local:[{name:"main",commits:5,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", newOn:"main", wstate:"clean"},
+    {kind:"cmd", cmd:'git restore --source=<c2-hash> src/app.ts',
+     desc:"커밋 전체가 아니라 <b>특정 파일 하나만</b> c2 시점 내용으로 가져온다. 이력은 그대로 두고 작업트리만 바뀌므로 부분 롤백에 안전하다. 구버전은 <code>git checkout &lt;c2&gt; -- src/app.ts</code>.",
+     local:[{name:"main",commits:5,head:true}], remote:[{name:"main",commits:2}], flow:{dir:null,label:""}, active:"main", wstate:"unstaged"},
+  ]
+},
+];
+
+let ci=0, si=0, timer=null;
+const $=id=>document.getElementById(id);
+
+function renderTabs(){
+  $("tabs").innerHTML=courses.map((c,i)=>
+    `<button class="tab ${i===ci?'on':''}" data-i="${i}">코스 ${i+1}</button>`).join("");
+  $("tabs").querySelectorAll(".tab").forEach(b=>{
+    b.onclick=()=>{stop();ci=+b.dataset.i;si=0;render();};
+  });
+}
+
+function wstateHTML(state){
+  if(!state) return "";
+  const map={
+    staged:["staged","변경: 스테이징됨 (git commit 대기)"],
+    unstaged:["unstaged","변경: 작업트리에만 있음 (git add 필요)"],
+    clean:["clean","작업트리 깨끗 (변경 없음)"],
+    conflict:["conflict","충돌 발생 — 머지 진행 중 (CONFLICT)"],
+  };
+  const [cls,txt]=map[state]||["",""];
+  return `<div class="wstate ${cls}"><span class="pip"></span>${txt}</div>`;
+}
+
+function branchHTML(b, active, newOn, opts){
+  opts=opts||{};
+  if(b.commits===0 && /비어|아직|연결/.test(b.name)){
+    return `<div class="branch"><div class="branch-name" style="color:var(--muted);font-weight:500">${b.name}</div></div>`;
+  }
+  const isAct=b.name===active;
+  let nodes="";
+  for(let i=0;i<b.commits;i++){
+    const isNew = (b.name===newOn) && i>=b.commits-1; // 마지막 커밋 강조
+    nodes+=`<span class="node ${isNew?'new':''}"></span>`;
+  }
+  // 되돌려져 사라진 커밋(점선)
+  if(opts.goneOn===b.name && opts.goneCount){
+    for(let i=0;i<opts.goneCount;i++) nodes+=`<span class="node gone"></span>`;
+  }
+  const head = b.head ? `<span class="head-tag">HEAD</span>` : "";
+  const ws = isAct ? wstateHTML(opts.wstate) : "";
+  return `<div class="branch ${isAct?'active':''}">
+    <div class="branch-name">${b.name} ${head}</div>
+    <div class="commits">${nodes||'<span style="font-size:11px;color:var(--muted)">커밋 0</span>'}</div>
+    ${ws}
+  </div>`;
+}
+
+function render(){
+  const c=courses[ci], s=c.steps[si];
+  renderTabs();
+  $("cTitle").textContent=c.title;
+  $("cGoal").textContent=c.goal;
+
+  const opts={wstate:s.wstate, goneOn:s.goneOn, goneCount:s.goneCount};
+
+  $("localBody").innerHTML = s.local.length
+    ? s.local.map(b=>branchHTML(b,s.active,s.newOn,opts)).join("")
+    : `<div class="empty">아직 로컬 저장소가 없습니다</div>`;
+  $("remoteBody").innerHTML = s.remote.map(b=>branchHTML(b,null,s.newOnRemote,{})).join("");
+
+  const f=s.flow||{};
+  $("flowArrow").textContent = f.dir==="→"?"→":(f.dir==="←"?"←":(f.label==="merge"||f.label==="merged"?"⛙":"·"));
+  $("flowLabel").textContent = f.label||"";
+  $("flow").classList.toggle("act", !!f.act);
+
+  $("term").innerHTML = c.steps.map((st,idx)=>{
+    const cur=idx===si?"cur":"";
+    if(st.kind==="web"){
+      return `<div class="line ${cur}"><span class="web-tag">WEB</span>${st.cmd}</div>`;
+    }
+    return `<div class="line ${cur}"><span class="pr">$ </span>${st.cmd}</div>`;
+  }).join("");
+
+  $("stepNo").textContent=`STEP ${si+1} / ${c.steps.length}`;
+  const dt=$("dangerTag");
+  if(s.danger){ dt.textContent="주의 · "+s.danger; dt.style.display="inline-block"; }
+  else dt.style.display="none";
+  $("stepDesc").innerHTML=s.desc;
+
+  $("prev").disabled = si===0;
+  $("next").disabled = si===c.steps.length-1;
+  $("counter").textContent=`코스 ${ci+1} · 단계 ${si+1}/${c.steps.length}`;
+}
+
+function next(){ const c=courses[ci]; if(si<c.steps.length-1){si++;render();} else stop(); }
+function prev(){ if(si>0){si--;render();} }
+function stop(){ if(timer){clearInterval(timer);timer=null;$("play").textContent="▶ 자동재생";$("play").classList.remove("primary");} }
+function play(){
+  if(timer){stop();return;}
+  $("play").textContent="❚❚ 정지"; $("play").classList.add("primary");
+  timer=setInterval(()=>{ const c=courses[ci]; if(si>=c.steps.length-1){stop();} else {si++;render();} },2000);
+}
+
+$("next").onclick=next; $("prev").onclick=prev; $("play").onclick=play;
+document.addEventListener("keydown",e=>{ if(e.key==="ArrowRight")next(); if(e.key==="ArrowLeft")prev(); });
+
+render();
+</script>
+
+
+<div class="cc-watermark-layer" aria-hidden="true" style="position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.22; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27360%27 height=%27240%27%3E%3Ctext x=%2715%27 y=%27130%27 font-family=%27monospace%27 font-size=%2716%27 fill=%27%2394A3B8%27 transform=%27rotate%28-30 180 120%29%27%3Erun-ai.kr%20%20%20brewnet.dev@gmail.com%3C/text%3E%3C/svg%3E&quot;); background-repeat:repeat;"></div></body></html>

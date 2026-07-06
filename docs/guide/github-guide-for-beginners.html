@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비개발자를 위한 GitHub 입문 — 가입부터 충돌 해결까지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* 폰트 선택 이유: 한글 장문 가독성을 위해 본문 Noto Sans KR, 명령어·경로는 고정폭 JetBrains Mono로 분리해
+     "읽는 글"과 "입력하는 명령"을 시각적으로 구분한다. (Inter/Arial 기본 수렴 금지) */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --text:   #111111;
+    --muted:  #6B7280;
+    --border: #E5E7EB;
+    --bg:     #FFFFFF;
+    --code-bg:#F3F4F6;
+    --soft-bg:#F8F7F4;
+    --accent: #B45309;   /* 단일 액센트(deep amber, 흰 배경 위 대비 약 5.3:1) — 링크·강조·중요 노드에만 사용 */
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 17px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 워터마크 — 화면 전체에 옅게 반복(클릭 방해 없음) */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: .22;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240'%3E%3Ctext x='15' y='130' font-family='monospace' font-size='16' fill='%2394A3B8' transform='rotate(-30 180 120)'%3Erun-ai.kr%20%20%20brewnet.dev@gmail.com%3C/text%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  /* ── 레이아웃: 본문 760px + 데스크탑 좌측 목차 ── */
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+  .layout { display: block; }
+  @media (min-width: 1040px) {
+    .layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 48px; align-items: start; }
+  }
+
+  /* ── 목차 ── */
+  .toc {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 16px;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  @media (min-width: 1040px) {
+    .toc { position: sticky; top: 24px; margin: 40px 0; max-height: calc(100vh - 60px); overflow: auto; }
+  }
+  .toc h2 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+            font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; }
+  .toc ol { list-style: none; counter-reset: t; }
+  .toc li { counter-increment: t; margin: 2px 0; }
+  .toc a {
+    display: block; padding: 5px 8px; color: var(--text); text-decoration: none;
+    border-left: 2px solid transparent; line-height: 1.4; border-radius: 0 4px 4px 0;
+  }
+  .toc a::before { content: counter(t) ". "; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .toc a:hover { color: var(--accent); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); background: var(--soft-bg); font-weight: 500; }
+
+  /* ── 헤더 ── */
+  header { padding: 56px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .kicker { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  h1 { font-size: 34px; font-weight: 900; line-height: 1.2; letter-spacing: -.02em; }
+  .lead { color: var(--muted); font-size: 17px; margin-top: 14px; max-width: 720px; }
+  .meta { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 18px; }
+
+  /* ── 본문 타이포 ── */
+  main { padding-bottom: 80px; }
+  section { padding-top: 44px; }
+  h2.sec { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.3;
+           padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  h2.sec .n { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; margin-right: 10px; }
+  h3 { font-size: 19px; font-weight: 700; margin: 28px 0 10px; }
+  p { margin: 12px 0; }
+  ul, ol { margin: 12px 0 12px 4px; padding-left: 22px; }
+  li { margin: 6px 0; }
+  strong { font-weight: 700; }
+  a.link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; word-break: break-all; }
+
+  /* 난이도 라벨 — 색이 아닌 텍스트로 정보 전달 */
+  .lvl { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .06em;
+         color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; vertical-align: middle;
+         margin-left: 10px; font-weight: 600; }
+
+  /* 코드 블록 + 복사 버튼 */
+  pre { position: relative; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+        padding: 16px 18px; margin: 14px 0; overflow-x: auto;
+        font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.65; }
+  pre code { font-family: inherit; white-space: pre; color: #1f2937; }
+  pre .c { color: var(--muted); }            /* 주석 */
+  pre .p { color: var(--accent); }           /* 프롬프트 기호/강조 */
+  .copy { position: absolute; top: 8px; right: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+          color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+          padding: 3px 9px; cursor: pointer; transition: color 120ms, border-color 120ms; }
+  .copy:hover { color: var(--accent); border-color: var(--accent); }
+  code.inline { font-family: 'JetBrains Mono', monospace; font-size: .9em; background: var(--code-bg);
+                border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; }
+
+  /* 콜아웃 — 단일 액센트 좌측 보더 + 연한 배경 */
+  .note { border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+          background: var(--soft-bg); padding: 14px 18px; margin: 18px 0; }
+  .note .t { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .note p { margin: 4px 0; }
+
+  /* 표 */
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 16px 0; }
+  th { text-align: left; font-weight: 700; border-bottom: 2px solid var(--text); padding: 9px 12px; }
+  td { border-bottom: 1px solid var(--border); padding: 9px 12px; vertical-align: top; }
+  td code { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  /* 스크린샷 자리 표시 */
+  .shot { border: 1px dashed #C9CCD1; border-radius: 8px; padding: 22px; margin: 16px 0;
+          color: var(--muted); font-size: 14px; text-align: center; font-family: 'JetBrains Mono', monospace; }
+  .shot b { display: block; color: var(--text); font-family: 'Noto Sans KR'; font-weight: 700; margin-bottom: 4px; }
+
+  /* SVG 다이어그램 래퍼 */
+  figure { margin: 22px 0; border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 12px; text-align: center; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0 60px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--accent); }
+
+  @media print {
+    .toc, .copy { display: none; }
+    body { font-size: 12pt; }
+    a.link::after { content: " (" attr(href) ")"; font-size: 9pt; color: #555; }
+    section { page-break-inside: auto; }
+    pre, table, figure { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">GitHub for Non-Developers</div>
+    <h1>비개발자를 위한 GitHub 입문</h1>
+    <p class="lead">가입부터 첫 푸시, 브랜치·PR, 그리고 충돌(conflict) 해결까지. 명령어를 외우지 않아도
+       흐름을 이해하면 따라 할 수 있도록 쉬운 단계 → 중급 단계 순으로 정리했습니다.</p>
+    <p class="meta">대상: 코드 작성 경험이 거의 없는 분 · 환경: GitHub.com (HTTPS 방식)</p>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── 목차 ── -->
+    <nav class="toc" aria-label="목차">
+      <h2>목차</h2>
+      <ol>
+        <li><a href="#s0">시작 전에 — Git과 GitHub의 차이</a></li>
+        <li><a href="#s1">GitHub 가입하기</a></li>
+        <li><a href="#s2">"비밀번호"의 진실 — 푸시 인증의 원리</a></li>
+        <li><a href="#s3">내 컴퓨터에 Git 준비하기</a></li>
+        <li><a href="#s4">첫 리포지토리 만들기</a></li>
+        <li><a href="#s5">클론 → 커밋 → 푸시 기본</a></li>
+        <li><a href="#s6">브랜치로 작업하고 PR로 합치기</a></li>
+        <li><a href="#s7">fetch · pull · push 구분하기</a></li>
+        <li><a href="#s8">merge 이해하기</a></li>
+        <li><a href="#s9">충돌(conflict) 해결 기본</a></li>
+        <li><a href="#s10">합쳐지지 않을 때 트러블슈팅</a></li>
+        <li><a href="#s11">실전 — 개발 시점 자주 쓰는 흐름</a></li>
+        <li><a href="#appendix">부록 — 치트시트 · 용어 · 출처</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <!-- 한눈 요약 -->
+      <div class="note" style="margin-top:32px">
+        <div class="t">먼저 알아야 할 한 가지</div>
+        <p>GitHub에 코드를 올릴 때(<code class="inline">git push</code>) 입력하는 건 <strong>GitHub 로그인 비밀번호가 아닙니다.</strong>
+           2021년 8월부터 비밀번호 인증이 폐지되어, 대신 <strong>브라우저 로그인 또는 토큰(PAT)</strong>으로 인증합니다.
+           비개발자라면 <strong>처음 푸시할 때 자동으로 뜨는 브라우저 로그인 창</strong>만 따라가면 됩니다. 자세한 건 2단계에서 다룹니다.</p>
+      </div>
+
+      <!-- ───────────── 0 ───────────── -->
+      <section id="s0">
+        <h2 class="sec"><span class="n">0</span>시작 전에 — Git과 GitHub의 차이<span class="lvl">난이도 쉬움</span></h2>
+        <p>두 단어가 비슷해 헷갈리지만 역할이 다릅니다.</p>
+        <table>
+          <thead><tr><th>구분</th><th>무엇인가</th><th>비유</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Git</strong></td><td>내 컴퓨터에서 파일의 변경 이력을 기록·관리하는 프로그램</td><td>저장 버튼이 달린 "기록 노트"</td></tr>
+            <tr><td><strong>GitHub</strong></td><td>그 기록을 인터넷에 올려 두고 여럿이 함께 보는 공간(웹 서비스)</td><td>노트를 올려 두는 "공용 책장"</td></tr>
+          </tbody>
+        </table>
+        <p>즉 <strong>Git은 내 컴퓨터(로컬)</strong>에서 돌아가고, <strong>GitHub은 인터넷(원격)</strong>에 있습니다.
+           우리는 로컬에서 작업한 기록을 GitHub으로 <em>올리고(push)</em>, 남이 올린 변경을 <em>내려받습니다(pull)</em>.</p>
+
+        <figure>
+          <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" font-family="'Noto Sans KR', sans-serif" role="img" aria-label="로컬 컴퓨터와 GitHub 원격 저장소 사이의 흐름도">
+            <!-- 로컬 (중립=회색) -->
+            <rect x="20" y="50" width="240" height="120" rx="8" fill="#F8F7F4" stroke="#6B7280" stroke-width="1.5"/>
+            <text x="140" y="78" text-anchor="middle" font-size="14" font-weight="700" fill="#111">내 컴퓨터 (로컬)</text>
+            <text x="140" y="104" text-anchor="middle" font-size="12" fill="#6B7280">Git이 변경 이력을 기록</text>
+            <text x="140" y="132" text-anchor="middle" font-size="12" fill="#6B7280">commit = 저장 지점 만들기</text>
+            <!-- 원격 (강조=액센트) -->
+            <rect x="460" y="50" width="240" height="120" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1.5"/>
+            <text x="580" y="78" text-anchor="middle" font-size="14" font-weight="700" fill="#B45309">GitHub (원격)</text>
+            <text x="580" y="104" text-anchor="middle" font-size="12" fill="#6B7280">인터넷에 올려 둔 저장소</text>
+            <text x="580" y="132" text-anchor="middle" font-size="12" fill="#6B7280">여럿이 함께 보고 합침</text>
+            <!-- push 화살표 -->
+            <line x1="265" y1="92" x2="455" y2="92" stroke="#B45309" stroke-width="1.5" marker-end="url(#a1)"/>
+            <text x="360" y="84" text-anchor="middle" font-size="12" font-weight="600" fill="#B45309">push (올리기)</text>
+            <!-- pull/fetch 화살표 -->
+            <line x1="455" y1="128" x2="265" y2="128" stroke="#6B7280" stroke-width="1.5" marker-end="url(#a2)"/>
+            <text x="360" y="146" text-anchor="middle" font-size="12" font-weight="600" fill="#6B7280">pull / fetch (내려받기)</text>
+            <defs>
+              <marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#B45309"/></marker>
+              <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6B7280"/></marker>
+            </defs>
+          </svg>
+          <figcaption>로컬에서 만든 기록을 push로 올리고, 원격의 변경을 pull/fetch로 내려받는다.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ───────────── 1 ───────────── -->
+      <section id="s1">
+        <h2 class="sec"><span class="n">1</span>GitHub 가입하기<span class="lvl">난이도 쉬움</span></h2>
+        <p><a class="link" href="https://github.com/signup">https://github.com/signup</a> 에 접속해 순서대로 입력합니다.</p>
+        <ol>
+          <li><strong>Email</strong> — 실제 사용하는 이메일(인증 메일이 옵니다).</li>
+          <li><strong>Password</strong> — GitHub <em>로그인용</em> 비밀번호. (뒤에서 설명하지만, 이 비밀번호는 코드를 올릴 때는 쓰지 않습니다.)</li>
+          <li><strong>Username</strong> — 전 세계에서 고유한 아이디. 저장소 주소에 들어갑니다. 예: <code class="inline">github.com/내아이디/저장소</code></li>
+          <li>이메일로 받은 <strong>인증 코드</strong> 입력 → 가입 완료.</li>
+        </ol>
+
+        <div class="shot">
+          <b>[스크린샷 영역]</b>
+          GitHub 가입 화면 — Email / Password / Username 입력란과 [Create account] 버튼
+        </div>
+
+        <div class="note">
+          <div class="t">2단계 인증(2FA)은 사실상 필수</div>
+          <p>2023년부터 GitHub은 <strong>코드를 올리는 모든 사용자에게 2단계 인증(2FA)을 의무화</strong>했습니다.
+             가입 후 또는 푸시를 시작하면 2FA 설정 안내가 뜹니다. <strong>인증 앱(Google Authenticator, Microsoft Authenticator 등)</strong>을
+             스마트폰에 설치해 등록하는 방식을 권장합니다. 등록 시 보여주는 <strong>복구 코드(recovery codes)는 반드시 따로 저장</strong>하세요.
+             휴대폰을 잃어버렸을 때 계정을 되살리는 유일한 열쇠입니다.</p>
+        </div>
+      </section>
+
+      <!-- ───────────── 2 ───────────── -->
+      <section id="s2">
+        <h2 class="sec"><span class="n">2</span>"비밀번호"의 진실 — 푸시 인증의 원리<span class="lvl">난이도 기본</span></h2>
+        <p>비개발자가 가장 많이 막히는 지점입니다. <code class="inline">git push</code>를 했더니 비밀번호를 물어봐서 GitHub 로그인 비밀번호를 넣으면 이런 에러가 납니다.</p>
+        <pre><code><span class="c">remote: Support for password authentication was removed on August 13, 2021.</span>
+fatal: Authentication failed for 'https://github.com/USER/REPO.git/'</code></pre>
+        <p><strong>원인:</strong> GitHub은 2021년 8월 13일에 <strong>비밀번호로 코드 작업을 인증하는 방식을 폐지</strong>했습니다.
+           대신 다음 셋 중 하나로 인증합니다. 비개발자에게 쉬운 순서로 정리했습니다.</p>
+
+        <h3>방법 A. 브라우저 로그인 (가장 쉬움 · 권장)</h3>
+        <p>Windows용 Git에는 <strong>Git Credential Manager</strong>가 기본 포함되어 있습니다(맥은 설치 가능).
+           이 경우 <strong>처음 푸시할 때 브라우저 창이 저절로 떠서</strong> GitHub에 로그인하면 끝납니다.
+           토큰을 직접 만질 필요가 없고, 그 다음부터는 아무것도 묻지 않습니다.</p>
+        <div class="shot">
+          <b>[스크린샷 영역]</b>
+          첫 push 시 자동으로 뜨는 "Sign in to GitHub" 브라우저 창 → [Authorize] 클릭
+        </div>
+
+        <h3>방법 B. gh CLI 로 한 번에</h3>
+        <p>GitHub 공식 도구 <code class="inline">gh</code>를 설치했다면 명령 한 줄로 인증·설정이 모두 끝납니다.</p>
+        <pre><code><span class="p">$</span> gh auth login
+<span class="c"># GitHub.com → HTTPS → "Login with a web browser" 선택</span>
+<span class="c"># 터미널에 표시된 8자리 코드를 브라우저에 입력하면 완료</span></code></pre>
+        <p>이 한 번으로 토큰 발급·저장·git 연결이 자동 처리됩니다.</p>
+
+        <h3>방법 C. 토큰(PAT) 직접 발급 (수동)</h3>
+        <p>위 방법을 못 쓰는 환경이거나 외부 도구에 토큰을 직접 넣어야 할 때 씁니다.</p>
+        <pre><code>GitHub 우상단 프로필 → Settings → Developer settings
+  → Personal access tokens → Tokens (classic)
+  → Generate new token (classic)
+  → Expiration: 90 days,  Scopes: repo 체크 → Generate</code></pre>
+        <p>발급된 <code class="inline">ghp_…</code> 토큰은 <strong>그 화면을 벗어나면 다시 볼 수 없으니</strong> 바로 복사해 안전한 곳에 보관합니다.
+           이후 푸시할 때 <code class="inline">Username</code>엔 GitHub 아이디, <code class="inline">Password</code> 자리엔 <strong>이 토큰</strong>을 붙여넣습니다.</p>
+        <pre><code><span class="p">$</span> git push origin main
+Username for 'https://github.com': <span class="c">내아이디</span>
+Password for 'https://...github.com': <span class="c">ghp_여기에토큰붙여넣기</span></code></pre>
+
+        <div class="note">
+          <div class="t">기억할 것</div>
+          <p>① 코드 작업 인증에 GitHub <strong>로그인 비밀번호는 쓰이지 않는다.</strong>
+             ② 비개발자는 <strong>방법 A(브라우저 로그인)</strong>가 가장 편하다.
+             ③ 토큰은 비밀번호처럼 다루고, 1년간 안 쓰면 GitHub이 자동으로 폐기한다.</p>
+        </div>
+      </section>
+
+      <!-- ───────────── 3 ───────────── -->
+      <section id="s3">
+        <h2 class="sec"><span class="n">3</span>내 컴퓨터에 Git 준비하기<span class="lvl">난이도 기본</span></h2>
+        <p>먼저 Git이 설치돼 있는지 확인합니다. 버전이 출력되면 설치된 것입니다.</p>
+        <pre><code><span class="p">$</span> git --version
+git version 2.43.0</code></pre>
+        <p>설치돼 있지 않다면 <a class="link" href="https://git-scm.com/downloads">https://git-scm.com/downloads</a> 에서 운영체제에 맞게 설치합니다.</p>
+
+        <h3>내 정보(로컬 계정) 등록하기</h3>
+        <p>커밋 기록에 "누가 변경했는지" 남기기 위해 이름과 이메일을 한 번 등록합니다.
+           <strong>이메일은 GitHub 가입 이메일과 같게</strong> 맞추면 GitHub에서 내 활동으로 인식됩니다.</p>
+        <pre><code><span class="p">$</span> git config --global user.name "Hong Gildong"
+<span class="p">$</span> git config --global user.email "내가입이메일@example.com"
+<span class="p">$</span> git config --global init.defaultBranch main   <span class="c"># 기본 브랜치 이름을 main으로</span></code></pre>
+        <p>제대로 등록됐는지는 아래로 확인합니다.</p>
+        <pre><code><span class="p">$</span> git config --list</code></pre>
+        <div class="note">
+          <div class="t">"로컬 계정 변경"이란?</div>
+          <p>회사·개인 등 이메일을 바꿔 커밋하고 싶으면 같은 명령으로 <code class="inline">user.email</code>을 다시 설정하면 됩니다.
+             특정 프로젝트에서만 다르게 쓰려면 그 폴더 안에서 <code class="inline">--global</code>을 빼고 실행하세요.</p>
+        </div>
+      </section>
+
+      <!-- ───────────── 4 ───────────── -->
+      <section id="s4">
+        <h2 class="sec"><span class="n">4</span>첫 리포지토리 만들기<span class="lvl">난이도 쉬움</span></h2>
+        <p>리포지토리(repository, 줄여서 repo)는 <strong>프로젝트 하나가 담기는 저장소 폴더</strong>입니다. GitHub 웹에서 만듭니다.</p>
+        <ol>
+          <li>GitHub 우상단 <strong>+</strong> → <strong>New repository</strong>.</li>
+          <li><strong>Repository name</strong> 입력 (예: <code class="inline">my-first-repo</code>).</li>
+          <li>공개 범위 선택: <strong>Public</strong>(누구나 봄) / <strong>Private</strong>(나/허락한 사람만).</li>
+          <li><strong>Add a README file</strong> 체크 — 첫 파일이 생겨 바로 클론하기 편합니다.</li>
+          <li><strong>Create repository</strong> 클릭.</li>
+        </ol>
+        <div class="shot">
+          <b>[스크린샷 영역]</b>
+          New repository 화면 — Repository name / Public·Private / Add a README 체크박스 / [Create repository]
+        </div>
+        <p>만들어진 저장소 주소는 다음 형태입니다. 다음 단계에서 이 주소를 씁니다.</p>
+        <pre><code>https://github.com/내아이디/my-first-repo.git</code></pre>
+      </section>
+
+      <!-- ───────────── 5 ───────────── -->
+      <section id="s5">
+        <h2 class="sec"><span class="n">5</span>클론 → 커밋 → 푸시 기본<span class="lvl">난이도 기본</span></h2>
+        <p>가장 많이 쓰는 핵심 흐름입니다. <strong>원격 저장소를 내 컴퓨터로 복제(clone)</strong>한 뒤, 파일을 고치고, 저장 지점을 만들고(commit), 올립니다(push).</p>
+
+        <h3>① 클론 — 내 컴퓨터로 가져오기</h3>
+        <pre><code><span class="p">$</span> git clone https://github.com/내아이디/my-first-repo.git
+<span class="p">$</span> cd my-first-repo</code></pre>
+
+        <h3>② 파일 수정 후 상태 확인</h3>
+        <p>README 파일을 메모장이나 편집기로 고친 뒤, 무엇이 바뀌었는지 봅니다.</p>
+        <pre><code><span class="p">$</span> git status
+<span class="c"># modified: README.md  ← 빨갛게 표시되면 "아직 저장 안 됨"</span></code></pre>
+
+        <h3>③ 커밋 — 저장 지점 만들기</h3>
+        <p><code class="inline">add</code>는 "이 변경을 포함하겠다"는 표시, <code class="inline">commit</code>은 "여기까지를 한 묶음으로 저장"입니다.</p>
+        <pre><code><span class="p">$</span> git add .                          <span class="c"># 바뀐 파일 전부 포함 (특정 파일만: git add README.md)</span>
+<span class="p">$</span> git commit -m "README에 프로젝트 소개 추가"</code></pre>
+
+        <h3>④ 푸시 — GitHub에 올리기</h3>
+        <pre><code><span class="p">$</span> git push</code></pre>
+        <p>처음 푸시할 때만 2단계에서 설명한 <strong>브라우저 로그인 창</strong>이 뜹니다. 한 번 인증하면 이후엔 묻지 않습니다.</p>
+
+        <div class="note">
+          <div class="t">README 없이 빈 저장소로 시작했다면</div>
+          <p>내 폴더를 처음부터 연결하는 경우엔 아래처럼 합니다.</p>
+        </div>
+        <pre><code><span class="p">$</span> git init
+<span class="p">$</span> git add .
+<span class="p">$</span> git commit -m "first commit"
+<span class="p">$</span> git branch -M main
+<span class="p">$</span> git remote add origin https://github.com/내아이디/my-first-repo.git
+<span class="p">$</span> git push -u origin main          <span class="c"># -u: 다음부터 git push만 해도 됨</span></code></pre>
+      </section>
+
+      <!-- ───────────── 6 ───────────── -->
+      <section id="s6">
+        <h2 class="sec"><span class="n">6</span>브랜치로 작업하고 PR로 합치기<span class="lvl">난이도 중급</span></h2>
+        <p><strong>브랜치(branch)</strong>는 본래 작업을 건드리지 않고 <strong>따로 떼어 안전하게 작업하는 작업 줄기</strong>입니다.
+           보통 <code class="inline">main</code>(배포본)과 <code class="inline">develop</code>(개발 통합본)을 두고, 새 작업은 거기서 가지를 칩니다.</p>
+
+        <figure>
+          <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" font-family="'Noto Sans KR', sans-serif" role="img" aria-label="기능 브랜치에서 작업 후 PR로 develop에 합치는 흐름도">
+            <!-- 라인들 -->
+            <line x1="40" y1="60" x2="680" y2="60" stroke="#6B7280" stroke-width="1.5"/>
+            <line x1="40" y1="140" x2="540" y2="140" stroke="#B45309" stroke-width="1.5"/>
+            <!-- 분기/병합 곡선 -->
+            <path d="M180,60 C180,100 220,140 260,140" fill="none" stroke="#B45309" stroke-width="1.5"/>
+            <path d="M540,140 C580,140 600,100 600,60" fill="none" stroke="#B45309" stroke-width="1.5" marker-end="url(#m1)"/>
+            <!-- 노드 -->
+            <circle cx="180" cy="60" r="6" fill="#6B7280"/>
+            <circle cx="600" cy="60" r="6" fill="#B45309"/>
+            <circle cx="320" cy="140" r="6" fill="#B45309"/>
+            <circle cx="440" cy="140" r="6" fill="#B45309"/>
+            <!-- 라벨 -->
+            <text x="60" y="50" font-size="13" font-weight="700" fill="#111">develop</text>
+            <text x="300" y="172" font-size="13" font-weight="700" fill="#B45309">feature/login (기능 브랜치)</text>
+            <text x="250" y="120" font-size="11" fill="#6B7280">분기</text>
+            <text x="600" y="44" text-anchor="middle" font-size="11" fill="#B45309">PR로 병합</text>
+            <text x="380" y="120" text-anchor="middle" font-size="11" fill="#6B7280">commit · commit</text>
+            <defs><marker id="m1" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#B45309"/></marker></defs>
+          </svg>
+          <figcaption>develop에서 기능 브랜치를 떼어 작업하고, 끝나면 PR을 통해 다시 develop으로 합친다.</figcaption>
+        </figure>
+
+        <h3>① 새 브랜치 만들고 그 위에서 작업</h3>
+        <pre><code><span class="p">$</span> git switch -c feature/login     <span class="c"># 생성+이동 (옛 방식: git checkout -b feature/login)</span>
+<span class="c"># ... 파일 작업 ...</span>
+<span class="p">$</span> git add .
+<span class="p">$</span> git commit -m "feat: 로그인 화면 추가"</code></pre>
+
+        <h3>② 브랜치를 원격에 올리기</h3>
+        <pre><code><span class="p">$</span> git push -u origin feature/login</code></pre>
+
+        <h3>③ PR(Pull Request) 만들기</h3>
+        <p>PR은 "내 브랜치의 변경을 develop에 합쳐 달라"는 <strong>합치기 요청 + 리뷰 공간</strong>입니다. 푸시 후 GitHub 저장소 페이지 상단에
+           <strong>Compare &amp; pull request</strong> 버튼이 나타납니다.</p>
+        <div class="shot">
+          <b>[스크린샷 영역]</b>
+          저장소 상단의 "Compare &amp; pull request" 노란 배너 → PR 작성 화면(base: develop ← compare: feature/login)
+        </div>
+        <ol>
+          <li><strong>base</strong>를 <code class="inline">develop</code>, <strong>compare</strong>를 <code class="inline">feature/login</code>으로 지정.</li>
+          <li>제목·설명 입력 → <strong>Create pull request</strong>.</li>
+          <li>리뷰·확인 후 <strong>Merge pull request</strong>로 develop에 합쳐집니다.</li>
+        </ol>
+        <p>명령으로 PR을 만들려면 <code class="inline">gh</code>를 씁니다.</p>
+        <pre><code><span class="p">$</span> gh pr create --base develop --head feature/login \
+     --title "로그인 화면 추가" --body "로그인 UI와 검증 추가"</code></pre>
+
+        <div class="note">
+          <div class="t">PR 없이 로컬에서 직접 develop에 합치려면</div>
+          <p>혼자 연습할 때는 PR 대신 로컬 병합도 가능합니다. (협업에서는 PR을 권장)</p>
+        </div>
+        <pre><code><span class="p">$</span> git switch develop
+<span class="p">$</span> git pull                <span class="c"># 원격 develop 최신화</span>
+<span class="p">$</span> git merge feature/login
+<span class="p">$</span> git push</code></pre>
+      </section>
+
+      <!-- ───────────── 7 ───────────── -->
+      <section id="s7">
+        <h2 class="sec"><span class="n">7</span>fetch · pull · push 구분하기<span class="lvl">난이도 중급</span></h2>
+        <p>세 명령은 모두 "원격과 주고받기"지만 방향과 동작이 다릅니다.</p>
+        <table>
+          <thead><tr><th>명령</th><th>방향</th><th>하는 일</th></tr></thead>
+          <tbody>
+            <tr><td><code>git fetch</code></td><td>원격 → 로컬</td><td>원격의 변경을 <strong>가져오기만</strong> 함. 내 작업 파일은 그대로 두고, 무엇이 바뀌었는지 먼저 확인할 때.</td></tr>
+            <tr><td><code>git pull</code></td><td>원격 → 로컬</td><td><strong>fetch + merge</strong>. 가져온 변경을 현재 브랜치에 <strong>바로 합침.</strong></td></tr>
+            <tr><td><code>git push</code></td><td>로컬 → 원격</td><td>내 커밋을 원격에 <strong>올림.</strong></td></tr>
+          </tbody>
+        </table>
+        <pre><code><span class="p">$</span> git fetch                       <span class="c"># 가져오기만 (안전, 미리보기)</span>
+<span class="p">$</span> git log origin/develop --oneline <span class="c"># 원격에 뭐가 들어왔는지 확인</span>
+<span class="p">$</span> git pull                        <span class="c"># 확인 후 합치기</span>
+<span class="p">$</span> git push                        <span class="c"># 내 작업 올리기</span></code></pre>
+        <div class="note">
+          <div class="t">실무 습관</div>
+          <p>작업을 시작하기 전 <code class="inline">git pull</code>로 최신 상태를 먼저 받아 두면, 나중에 충돌이 크게 나는 걸 줄일 수 있습니다.</p>
+        </div>
+      </section>
+
+      <!-- ───────────── 8 ───────────── -->
+      <section id="s8">
+        <h2 class="sec"><span class="n">8</span>merge 이해하기<span class="lvl">난이도 중급</span></h2>
+        <p><code class="inline">merge</code>는 <strong>한 브랜치의 변경을 다른 브랜치로 합치는 작업</strong>입니다. 합치는 쪽 브랜치로 이동한 뒤 합칠 브랜치를 지정합니다.</p>
+        <pre><code><span class="p">$</span> git switch develop          <span class="c"># 받는 쪽으로 이동</span>
+<span class="p">$</span> git merge feature/login     <span class="c"># feature/login의 변경을 develop으로</span></code></pre>
+        <p>두 가지 결과가 있습니다.</p>
+        <ul>
+          <li><strong>Fast-forward</strong> — develop에 그동안 새 커밋이 없으면, 그냥 포인터만 앞으로 옮겨 깔끔히 합쳐집니다.</li>
+          <li><strong>3-way merge</strong> — 양쪽 모두 변경이 있으면 Git이 둘을 합친 <strong>병합 커밋</strong>을 만듭니다. 이때 같은 줄을 서로 다르게 고쳤다면 <strong>충돌(conflict)</strong>이 납니다(다음 단계).</li>
+        </ul>
+      </section>
+
+      <!-- ───────────── 9 ───────────── -->
+      <section id="s9">
+        <h2 class="sec"><span class="n">9</span>충돌(conflict) 해결 기본<span class="lvl">난이도 중급</span></h2>
+        <p><strong>같은 파일의 같은 줄</strong>을 두 브랜치가 서로 다르게 고치면 Git이 자동으로 못 합치고 충돌을 알립니다.</p>
+        <pre><code><span class="p">$</span> git merge feature/login
+Auto-merging README.md
+CONFLICT (content): Merge conflict in README.md
+Automatic merge failed; fix conflicts and then commit the result.</code></pre>
+
+        <h3>① 충돌 표시 읽기</h3>
+        <p>충돌난 파일을 열면 이런 표시가 들어가 있습니다.</p>
+        <pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+현재 브랜치(develop)의 내용
+=======
+들어오는 브랜치(feature/login)의 내용
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/login</code></pre>
+        <ul>
+          <li><code class="inline">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code> ~ <code class="inline">=======</code> : 지금 내 브랜치 내용</li>
+          <li><code class="inline">=======</code> ~ <code class="inline">&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> : 합쳐 들어오는 내용</li>
+        </ul>
+
+        <h3>② 직접 고치기</h3>
+        <p>최종적으로 남길 내용만 남기고 <strong>표시줄 3개(<code class="inline">&lt;&lt;&lt;</code>, <code class="inline">===</code>, <code class="inline">&gt;&gt;&gt;</code>)를 모두 지웁니다.</strong>
+           둘 다 살릴 수도, 하나만 택할 수도, 새로 합쳐 쓸 수도 있습니다.</p>
+
+        <h3>③ 해결 표시 후 커밋</h3>
+        <pre><code><span class="p">$</span> git add README.md       <span class="c"># 해결했다고 표시</span>
+<span class="p">$</span> git commit               <span class="c"># 병합 커밋 생성 (메시지 자동 제안됨)</span>
+<span class="p">$</span> git push</code></pre>
+        <div class="note">
+          <div class="t">막막하면 일단 멈추기</div>
+          <p>충돌이 너무 복잡해 손대기 두렵다면 <code class="inline">git merge --abort</code>로 <strong>병합 직전 상태로 되돌릴 수 있습니다.</strong> 안전하게 다시 시작하세요.</p>
+        </div>
+      </section>
+
+      <!-- ───────────── 10 ───────────── -->
+      <section id="s10">
+        <h2 class="sec"><span class="n">10</span>합쳐지지 않을 때 트러블슈팅<span class="lvl">난이도 중급</span></h2>
+        <p>자주 만나는 상황과 기본 해결법입니다. 막히면 먼저 <code class="inline">git status</code>가 알려주는 안내 문구를 읽는 습관이 가장 중요합니다.</p>
+
+        <h3>증상 1. push가 거부됨 (rejected)</h3>
+        <pre><code> ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/...'</code></pre>
+        <p><strong>원인:</strong> 내가 올리는 사이에 원격에 다른 변경이 먼저 들어왔습니다.
+           <strong>해결:</strong> 원격 변경을 먼저 받아 합친 뒤 다시 올립니다.</p>
+        <pre><code><span class="p">$</span> git pull        <span class="c"># 원격 변경 합치기 (충돌 나면 9단계대로 해결)</span>
+<span class="p">$</span> git push</code></pre>
+
+        <h3>증상 2. 병합을 취소하고 싶음</h3>
+        <pre><code><span class="p">$</span> git merge --abort   <span class="c"># 병합 시작 전 상태로 복귀</span></code></pre>
+
+        <h3>증상 3. 엉뚱한 브랜치에서 작업함</h3>
+        <pre><code><span class="p">$</span> git switch 올바른브랜치     <span class="c"># 아직 커밋 안 했다면 변경이 따라 이동</span>
+<span class="c"># 변경을 잠깐 치워 두고 이동하려면:</span>
+<span class="p">$</span> git stash               <span class="c"># 작업 임시 보관</span>
+<span class="p">$</span> git switch 올바른브랜치
+<span class="p">$</span> git stash pop           <span class="c"># 보관한 작업 꺼내기</span></code></pre>
+
+        <h3>증상 4. 인증 실패로 push가 안 됨</h3>
+        <p>2단계의 인증 문제입니다. 브라우저 인증을 다시 하거나(<code class="inline">gh auth login</code>), 토큰을 새로 발급해 입력합니다.
+           이전에 잘못 저장된 인증 정보가 캐시돼 있으면 OS의 자격 증명 관리자(Windows) · 키체인(macOS)에서 <code class="inline">github.com</code> 항목을 지운 뒤 다시 인증하세요.</p>
+
+        <h3>증상 5. 현재 상태가 헷갈림</h3>
+        <pre><code><span class="p">$</span> git status                       <span class="c"># 지금 무슨 상태인지 (가장 먼저!)</span>
+<span class="p">$</span> git remote -v                     <span class="c"># 연결된 원격 주소 확인</span>
+<span class="p">$</span> git log --oneline --graph -10     <span class="c"># 최근 이력을 그림으로</span></code></pre>
+        <div class="note">
+          <div class="t">트러블슈팅 3원칙</div>
+          <p>① <code class="inline">git status</code>를 먼저 읽는다 — Git이 해야 할 일을 거의 알려준다.
+             ② 되돌릴 수 있는 명령(<code class="inline">--abort</code>, <code class="inline">stash</code>)부터 쓴다.
+             ③ 강제 명령(<code class="inline">push --force</code>, <code class="inline">reset --hard</code>)은 함부로 쓰지 않는다 — 남의 작업이나 내 기록이 사라질 수 있다.</p>
+        </div>
+      </section>
+
+      <!-- ───────────── 11 ───────────── -->
+      <section id="s11">
+        <h2 class="sec"><span class="n">11</span>실전 — 개발 시점 자주 쓰는 흐름<span class="lvl">난이도 실무</span></h2>
+        <p>앞 단계에서 배운 명령들을 <strong>"실제 작업할 때 이 순서로"</strong> 묶었습니다. 상황별로 통째로 복사해 쓰고,
+           익숙해지면 한 줄씩 바꿔 보세요. 예시의 <code class="inline">내아이디</code>·<code class="inline">my-project</code>는 본인 것으로 바꾸면 됩니다.</p>
+
+        <h3>① 저장소를 새로 만든 직후 — clone 받아 시작</h3>
+        <p>GitHub 웹에서 저장소를 만든 뒤, 내 컴퓨터로 복제해 작업을 시작하는 가장 흔한 출발점입니다.</p>
+        <pre><code><span class="p">$</span> git clone https://github.com/내아이디/my-project.git
+<span class="p">$</span> cd my-project
+<span class="p">$</span> git status           <span class="c"># 깨끗한지 확인 ("nothing to commit")</span>
+<span class="p">$</span> git remote -v        <span class="c"># 연결된 원격(origin) 주소 확인</span></code></pre>
+
+        <h3>② 파일 만들고 → 커밋 → 푸시 (한 사이클)</h3>
+        <p>가장 많이 반복하는 핵심 루프입니다. <strong>만들기 → 포함(add) → 저장(commit) → 올리기(push)</strong>.</p>
+        <pre><code><span class="p">$</span> touch index.html              <span class="c"># 새 파일 생성 (또는 편집기로 작업)</span>
+<span class="p">$</span> git status                    <span class="c"># Untracked files: index.html (아직 추적 안 됨)</span>
+<span class="p">$</span> git add index.html            <span class="c"># 이 파일을 커밋에 포함 (전부: git add .)</span>
+<span class="p">$</span> git commit -m "feat: 첫 페이지 추가"
+<span class="p">$</span> git push                      <span class="c"># 원격에 올리기</span></code></pre>
+        <div class="note">
+          <div class="t">add와 commit이 헷갈릴 때</div>
+          <p><code class="inline">add</code>는 "이 변경을 이번 저장에 <strong>담겠다</strong>"는 장바구니 담기,
+             <code class="inline">commit</code>은 "담은 것들을 <strong>한 묶음으로 확정</strong>"하는 결제라고 생각하면 쉽습니다.</p>
+        </div>
+
+        <h3>③ 작업 전 원격 변경 미리 확인 — fetch</h3>
+        <p>바로 합치는 <code class="inline">pull</code>과 달리, <code class="inline">fetch</code>는 <strong>가져오기만</strong> 해서 무엇이 바뀌었는지 먼저 보고 합칠지 정할 수 있습니다.</p>
+        <pre><code><span class="p">$</span> git fetch origin                       <span class="c"># 원격 변경을 가져오기만 (내 파일은 그대로)</span>
+<span class="p">$</span> git log --oneline origin/main -5       <span class="c"># 원격 main에 뭐가 들어왔는지 확인</span>
+<span class="p">$</span> git diff main origin/main              <span class="c"># 내 것과 원격의 차이 보기</span>
+<span class="p">$</span> git pull                               <span class="c"># 확인했으면 실제로 합치기</span></code></pre>
+
+        <h3>④ 새 브랜치 만들어 작업하고 → 원격에 푸시</h3>
+        <p>새 기능·실험은 <code class="inline">main</code>을 건드리지 말고 <strong>브랜치를 따서</strong> 작업합니다.</p>
+        <pre><code><span class="p">$</span> git switch -c feature/signup     <span class="c"># 브랜치 생성+이동 (옛 방식: git checkout -b)</span>
+<span class="c"># ... 파일 작업 ...</span>
+<span class="p">$</span> git add .
+<span class="p">$</span> git commit -m "feat: 회원가입 폼 추가"
+<span class="p">$</span> git push -u origin feature/signup   <span class="c"># 원격에 브랜치 올리기 (-u: 다음부턴 git push만)</span></code></pre>
+        <div class="note">
+          <div class="t">브랜치 다루기 보조 명령</div>
+          <p><code class="inline">git branch</code> (목록·현재 위치 *표시) · <code class="inline">git switch main</code> (이동) ·
+             <code class="inline">git branch -d feature/signup</code> (합친 브랜치 삭제) ·
+             <code class="inline">git push origin --delete feature/signup</code> (원격 브랜치 삭제).</p>
+        </div>
+
+        <h3>⑤ 다른 사람 작업을 받아 합치기 — 원격 브랜치 pull 후 merge</h3>
+        <p>협업 중 <code class="inline">develop</code>에 쌓인 동료의 변경을 받아 내 브랜치에 반영하는 흐름입니다.</p>
+        <pre><code><span class="p">$</span> git switch develop          <span class="c"># 통합 브랜치로 이동</span>
+<span class="p">$</span> git pull origin develop     <span class="c"># 원격 develop 최신화 (fetch + merge)</span>
+<span class="p">$</span> git switch feature/signup   <span class="c"># 내 작업 브랜치로 복귀</span>
+<span class="p">$</span> git merge develop           <span class="c"># 최신 develop을 내 브랜치에 합치기</span>
+<span class="c"># 충돌이 나면 9단계대로 해결 후 git add → git commit</span></code></pre>
+
+        <h3>⑥ history 에러 — "refusing to merge unrelated histories"</h3>
+        <p>로컬에서 <code class="inline">git init</code>으로 시작해 커밋한 저장소를, <strong>이미 README가 있는 원격</strong>과 연결해
+           pull/merge 하면 두 이력의 뿌리가 달라 다음 에러가 납니다.</p>
+        <pre><code>fatal: refusing to merge unrelated histories</code></pre>
+        <p><strong>원인:</strong> 로컬과 원격이 <strong>서로 다른 첫 커밋</strong>에서 출발해 공통 조상이 없습니다.
+           <strong>해결:</strong> "관련 없는 이력도 합치겠다"는 옵션을 한 번 붙입니다.</p>
+        <pre><code><span class="p">$</span> git pull origin main --allow-unrelated-histories
+<span class="c"># 또는 fetch 후 merge로:</span>
+<span class="p">$</span> git fetch origin
+<span class="p">$</span> git merge origin/main --allow-unrelated-histories
+<span class="c"># 충돌이 나면 해결 후 git add → git commit → git push</span></code></pre>
+        <div class="note">
+          <div class="t">애초에 안 만나려면</div>
+          <p>새 저장소는 <strong>원격을 먼저 만들고 <code class="inline">git clone</code>으로 시작</strong>하면 이 에러가 나지 않습니다.
+             (①번 흐름) <code class="inline">git init</code> 후 원격 연결은 이력이 갈리기 쉬운 패턴입니다.</p>
+        </div>
+
+        <h3>⑦ Git 추적에서 제외하기 — .gitignore</h3>
+        <p><code class="inline">node_modules/</code>, 빌드 결과물, 비밀 키(<code class="inline">.env</code>) 등은 올리면 안 됩니다.
+           <strong><code class="inline">.gitignore</code></strong> 파일에 적어 두면 Git이 아예 추적하지 않습니다.</p>
+        <pre><code><span class="p">$</span> touch .gitignore
+<span class="p">$</span> nano .gitignore      <span class="c"># 아래 내용 작성 후 저장</span>
+<span class="c"># --- .gitignore 예시 ---</span>
+<span class="c"># node_modules/      디렉토리 통째로 제외</span>
+<span class="c"># .env               특정 파일 제외</span>
+<span class="c"># *.log              .log로 끝나는 모든 파일</span>
+<span class="c"># build/             빌드 산출물</span>
+<span class="p">$</span> git add .gitignore
+<span class="p">$</span> git commit -m "chore: gitignore 추가"</code></pre>
+        <div class="note">
+          <div class="t">이미 올라간 파일을 뒤늦게 빼려면 (git rm --cached)</div>
+          <p><code class="inline">.gitignore</code>는 <strong>아직 추적 안 된 파일</strong>에만 효과가 있습니다.
+             이미 커밋·푸시된 파일은 추적 목록에서 빼야 합니다. <strong>실제 파일은 지우지 않고</strong> Git 추적만 끊는 명령:</p>
+        </div>
+        <pre><code><span class="p">$</span> git rm -r --cached node_modules    <span class="c"># 추적만 해제 (디스크의 폴더는 그대로)</span>
+<span class="p">$</span> git rm --cached .env               <span class="c"># 파일 하나만 추적 해제</span>
+<span class="p">$</span> git commit -m "chore: 추적 제외 적용"
+<span class="p">$</span> git push</code></pre>
+        <div class="note">
+          <div class="t">주의 — 이미 푸시된 비밀 키는 "기록"에 남습니다</div>
+          <p><code class="inline">.env</code>·토큰 같은 민감 정보를 한 번이라도 푸시했다면, 추적만 빼도 <strong>과거 커밋 이력에는 여전히 남아</strong> 있습니다.
+             그 경우 <strong>해당 키를 즉시 폐기·재발급</strong>하는 것이 가장 안전합니다.</p>
+        </div>
+
+        <h3>⑧ 자주 쓰는 되돌리기 보조</h3>
+        <table>
+          <thead><tr><th>상황</th><th>명령</th></tr></thead>
+          <tbody>
+            <tr><td>방금 쓴 커밋 메시지 수정</td><td><code>git commit --amend -m "새 메시지"</code> (푸시 전에만)</td></tr>
+            <tr><td>마지막 커밋 취소(변경은 남김)</td><td><code>git reset --soft HEAD~1</code></td></tr>
+            <tr><td>아직 add 안 한 파일 수정 되돌리기</td><td><code>git restore 파일명</code></td></tr>
+            <tr><td>add 한 것을 다시 빼기(언스테이지)</td><td><code>git restore --staged 파일명</code></td></tr>
+            <tr><td>이미 푸시한 커밋을 안전하게 되돌리기</td><td><code>git revert &lt;커밋해시&gt;</code> (이력 보존)</td></tr>
+          </tbody>
+        </table>
+        <div class="note">
+          <div class="t">강제 명령 주의</div>
+          <p><code class="inline">reset --hard</code>·<code class="inline">push --force</code>는 <strong>내 기록이나 남의 작업을 지울 수 있습니다.</strong>
+             이미 공유된(푸시된) 커밋을 되돌릴 땐 이력을 지우는 <code class="inline">reset</code> 대신, 되돌림을 새 커밋으로 남기는 <code class="inline">git revert</code>를 쓰세요.</p>
+        </div>
+      </section>
+
+      <!-- ───────────── 부록 ───────────── -->
+      <section id="appendix">
+        <h2 class="sec"><span class="n">+</span>부록 — 치트시트 · 용어 · 출처</h2>
+
+        <h3>A. 명령어 치트시트</h3>
+        <table>
+          <thead><tr><th>상황</th><th>명령</th></tr></thead>
+          <tbody>
+            <tr><td>원격 저장소 복제</td><td><code>git clone &lt;주소&gt;</code></td></tr>
+            <tr><td>상태 확인</td><td><code>git status</code></td></tr>
+            <tr><td>변경 포함 → 저장</td><td><code>git add .</code> → <code>git commit -m "메시지"</code></td></tr>
+            <tr><td>올리기 / 내려받기</td><td><code>git push</code> / <code>git pull</code></td></tr>
+            <tr><td>가져오기만(미리보기)</td><td><code>git fetch</code></td></tr>
+            <tr><td>새 브랜치 생성+이동</td><td><code>git switch -c &lt;이름&gt;</code></td></tr>
+            <tr><td>브랜치 이동</td><td><code>git switch &lt;이름&gt;</code></td></tr>
+            <tr><td>브랜치 합치기</td><td><code>git merge &lt;브랜치&gt;</code></td></tr>
+            <tr><td>병합 취소</td><td><code>git merge --abort</code></td></tr>
+            <tr><td>작업 임시 보관/복원</td><td><code>git stash</code> / <code>git stash pop</code></td></tr>
+            <tr><td>이력 뿌리 다를 때 합치기</td><td><code>git pull origin main --allow-unrelated-histories</code></td></tr>
+            <tr><td>추적에서 제외(이미 올린 파일)</td><td><code>git rm -r --cached &lt;경로&gt;</code> + <code>.gitignore</code></td></tr>
+            <tr><td>커밋 메시지 수정(푸시 전)</td><td><code>git commit --amend -m "..."</code></td></tr>
+            <tr><td>푸시한 커밋 되돌리기</td><td><code>git revert &lt;해시&gt;</code></td></tr>
+            <tr><td>gh로 인증</td><td><code>gh auth login</code></td></tr>
+            <tr><td>gh로 PR 생성</td><td><code>gh pr create --base develop</code></td></tr>
+          </tbody>
+        </table>
+
+        <h3>B. 용어 한 줄 정리</h3>
+        <table>
+          <thead><tr><th>용어</th><th>뜻</th></tr></thead>
+          <tbody>
+            <tr><td>repository(repo)</td><td>프로젝트가 담기는 저장소</td></tr>
+            <tr><td>clone</td><td>원격 저장소를 내 컴퓨터로 복제</td></tr>
+            <tr><td>commit</td><td>변경을 한 묶음으로 저장한 지점</td></tr>
+            <tr><td>push / pull</td><td>올리기 / 내려받아 합치기</td></tr>
+            <tr><td>branch</td><td>본래 작업과 분리된 작업 줄기</td></tr>
+            <tr><td>merge</td><td>한 브랜치를 다른 브랜치로 합치기</td></tr>
+            <tr><td>PR (Pull Request)</td><td>합치기 요청 + 리뷰 공간</td></tr>
+            <tr><td>conflict</td><td>같은 줄을 다르게 고쳐 자동 병합이 실패한 상태</td></tr>
+            <tr><td>.gitignore</td><td>Git이 추적하지 않을 파일·폴더 목록</td></tr>
+            <tr><td>PAT</td><td>비밀번호 대신 쓰는 개인용 접근 토큰</td></tr>
+          </tbody>
+        </table>
+
+        <h3>C. 공식 출처</h3>
+        <ul>
+          <li>비밀번호 인증 폐지 공지 — <a class="link" href="https://github.blog/changelog/2021-08-12-git-password-authentication-is-shutting-down/">github.blog/changelog/2021-08-12-git-password-authentication-is-shutting-down</a></li>
+          <li>PAT 관리 가이드 — <a class="link" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens">docs.github.com · managing-your-personal-access-tokens</a></li>
+          <li>2단계 인증 의무화 — <a class="link" href="https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/about-mandatory-two-factor-authentication">docs.github.com · about-mandatory-two-factor-authentication</a></li>
+          <li>GitHub CLI 매뉴얼 — <a class="link" href="https://cli.github.com/manual/">cli.github.com/manual</a></li>
+          <li>Git 공식 문서(한국어 포함) — <a class="link" href="https://git-scm.com/doc">git-scm.com/doc</a></li>
+        </ul>
+      </section>
+
+      <footer>
+        본 문서는 GitHub.com 기준(HTTPS 방식)으로 작성되었습니다. UI 명칭·버전은 시점에 따라 달라질 수 있습니다.
+        인증 방식·2FA 정책은 위 공식 출처에서 최신 내용을 확인하세요.
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // 코드 블록 복사 버튼 (기능적 동작만, 장식 애니메이션 없음)
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copy';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.addEventListener('click', function () {
+      var codeEl = pre.querySelector('code');
+      var text = codeEl ? codeEl.innerText : pre.innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨';
+        setTimeout(function () { btn.textContent = '복사'; }, 1200);
+      }).catch(function () {
+        btn.textContent = '복사 실패';
+        setTimeout(function () { btn.textContent = '복사'; }, 1200);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 목차 현재 위치 표시 (스크롤스파이)
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var linkMap = {};
+  tocLinks.forEach(function (a) { linkMap[a.getAttribute('href').slice(1)] = a; });
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        tocLinks.forEach(function (l) { l.classList.remove('active'); });
+        if (linkMap[e.target.id]) { linkMap[e.target.id].classList.add('active'); }
+      }
+    });
+  }, { rootMargin: '0px 0px -78% 0px' });
+  document.querySelectorAll('section[id]').forEach(function (s) { observer.observe(s); });
+</script>
+<script>
+/* 임베드 안전 패치 — run-ai.kr 등이 이 문서를 sandbox iframe(origin null)으로 임베드할 때:
+   1) 네이티브 #hash 앵커 클릭이 상위 SPA URL을 바꿔 라우터 재렌더 크래시를 유발 → scrollIntoView로 대체
+   2) sandbox에서 navigator.clipboard 부재 시 복사 버튼이 죽음 → execCommand 폴백 주입 */
+document.addEventListener('click', function(e){
+  var a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (!href || href.length < 2) return;
+  var el = document.getElementById(href.slice(1));
+  if (!el) return;
+  e.preventDefault();
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+if (!navigator.clipboard || !navigator.clipboard.writeText) {
+  try {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: function(t){
+      var ta = document.createElement('textarea'); ta.value = t;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (err) {}
+      ta.remove(); return Promise.resolve();
+    } } });
+  } catch (err) {}
+}
+</script>
+</body>
+</html>

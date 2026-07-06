@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 설치 Step-by-Step (macOS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /*
+    폰트 의도:
+    - 본문: Noto Sans KR — 한글 본문 가독성과 굵기 단계가 안정적
+    - 코드: JetBrains Mono — 0/O, 1/l/I 구분이 명확해 셸 명령 오독 방지
+    색: 무채색 베이스(흰/회/검) + 액센트 1색(파랑). 색은 링크·단계번호·상태에만 사용.
+  */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --surface: #fafafa;
+    --code-bg: #f5f5f5;
+    --border: #e4e4e4;
+    --border-strong: #d4d4d4;
+    --text: #1a1a1a;
+    --text-2: #404040;
+    --muted: #707070;
+    --accent: #2563eb;
+
+    --font-sans: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --radius: 6px;
+    --maxw: 880px;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+    padding: 48px 24px 96px;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; }
+
+  /* ── 헤더 ── */
+  header.doc {
+    border-bottom: 1px solid var(--border-strong);
+    padding-bottom: 24px;
+    margin-bottom: 40px;
+  }
+  header.doc h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+  header.doc .meta {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  header.doc .meta span { white-space: nowrap; }
+  header.doc .meta .tag {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 2px 9px;
+    color: var(--text-2);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+
+  /* ── 목차 ── */
+  nav.toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin-bottom: 44px;
+  }
+  nav.toc h2 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  nav.toc ol { list-style: none; counter-reset: toc; columns: 2; column-gap: 32px; }
+  nav.toc li { counter-increment: toc; margin-bottom: 7px; break-inside: avoid; }
+  nav.toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    margin-right: 9px;
+  }
+  nav.toc a { color: var(--text-2); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+
+  /* ── 섹션 ── */
+  section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  h2.sec {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 22px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  h2.sec .num {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  h3.sub {
+    font-size: 1.02rem;
+    font-weight: 700;
+    margin: 28px 0 12px;
+    color: var(--text);
+  }
+  p { margin-bottom: 14px; color: var(--text-2); }
+  strong { color: var(--text); font-weight: 700; }
+
+  /* 인라인 코드 */
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #b91c1c;
+  }
+
+  /* 코드 블록 */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 14px 0 18px;
+  }
+  pre code {
+    background: none; border: none; padding: 0;
+    color: var(--text); font-size: 0.84rem; line-height: 1.65;
+  }
+  pre code .c { color: var(--muted); }      /* 주석 */
+  pre code .o { color: var(--accent); }      /* 출력/강조 */
+
+  /* 테이블 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 20px;
+    font-size: 0.88rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 9px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--surface);
+    font-weight: 700;
+    color: var(--text);
+    font-size: 0.82rem;
+  }
+  td { color: var(--text-2); }
+  td code, th code { font-size: 0.82rem; }
+
+  /* 콜아웃 — 좌측 강조 테두리·색 없이 텍스트 라벨로만 종류 구분 */
+  .callout {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+    margin: 16px 0;
+    background: var(--surface);
+    font-size: 0.9rem;
+  }
+  .callout .label {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 8px;
+  }
+  .callout.warn .label { color: var(--text); font-weight: 700; }
+  .callout p { margin: 0; color: var(--text-2); display: inline; }
+  .callout.block p { display: block; margin-bottom: 8px; }
+  .callout.block p:last-child { margin-bottom: 0; }
+
+  /* 플레이스홀더 (스크린샷/흐름도) */
+  .ph {
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin: 16px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    background: var(--surface);
+  }
+  .ph .k {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* 상태 배지 (검증 노트) */
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    padding: 1px 7px;
+    white-space: nowrap;
+    color: var(--text-2);
+  }
+  .badge.ok { color: var(--accent); border-color: var(--accent); }
+  .badge.warn { color: var(--text); border-color: var(--border-strong); }
+
+  ul.plain { list-style: none; margin: 8px 0 16px; }
+  ul.plain li {
+    position: relative;
+    padding-left: 18px;
+    margin-bottom: 7px;
+    color: var(--text-2);
+    font-size: 0.92rem;
+  }
+  ul.plain li::before {
+    content: "—";
+    position: absolute; left: 0;
+    color: var(--muted);
+  }
+
+  a.ref { color: var(--accent); text-decoration: none; word-break: break-all; }
+  a.ref:hover { text-decoration: underline; }
+
+  footer.doc {
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  footer.doc a { color: var(--accent); text-decoration: none; }
+  footer.doc a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    body { padding: 28px 16px 64px; font-size: 14px; }
+    nav.toc ol { columns: 1; }
+    header.doc h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <h1>Claude Code 설치 Step-by-Step (macOS)</h1>
+    <div class="meta">
+      <span class="tag">강의 녹화용</span>
+      <span class="tag">대상: 개발자</span>
+      <span>시나리오: 기존 설치 언인스톨 → 재설치 → 검증 → 실행</span>
+      <span>기준 셸: zsh (macOS 기본)</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#s0">녹화 흐름 요약</a></li>
+      <li><a href="#s1">언인스톨</a></li>
+      <li><a href="#s2">재설치</a></li>
+      <li><a href="#s3">버전 확인</a></li>
+      <li><a href="#s4">PATH 설정 (zshrc / bashrc)</a></li>
+      <li><a href="#s5">버전 확인 실패 케이스</a></li>
+      <li><a href="#s6">Claude 실행</a></li>
+      <li><a href="#s7">실행 기본 옵션</a></li>
+      <li><a href="#s8">트러블슈팅 (자동 PATH 등록 실패 등)</a></li>
+      <li><a href="#s9">검증 노트 &amp; 출처</a></li>
+    </ol>
+  </nav>
+
+  <!-- 0 -->
+  <section id="s0">
+    <h2 class="sec"><span class="num">00</span>녹화 흐름 요약</h2>
+    <table>
+      <thead><tr><th style="width:14%">단계</th><th style="width:48%">명령</th><th>핵심</th></tr></thead>
+      <tbody>
+        <tr><td>① 언인스톨</td><td><code>rm -f ~/.local/bin/claude</code> · <code>rm -rf ~/.local/share/claude</code></td><td>native 설치 흔적 제거</td></tr>
+        <tr><td>② 설정 처리(선택)</td><td><code>~/.claude</code>, <code>~/.claude.json</code></td><td>세션·MCP·설정 보존 여부 결정</td></tr>
+        <tr><td>③ 재설치</td><td><code>curl -fsSL https://claude.ai/install.sh | bash</code></td><td>native 설치 (자동 업데이트 O)</td></tr>
+        <tr><td>④ 버전 확인</td><td><code>claude --version</code></td><td>설치 성공 확인</td></tr>
+        <tr><td>⑤ 확인 실패 시</td><td>PATH에 <code>~/.local/bin</code> 추가</td><td><code>command not found</code> 99% 원인</td></tr>
+        <tr><td>⑥ PATH 영구화</td><td><code>~/.zshrc</code> (또는 <code>~/.bashrc</code>)</td><td>새 터미널에서도 인식</td></tr>
+        <tr><td>⑦ 실행</td><td><code>claude</code></td><td>프로젝트 폴더에서 실행</td></tr>
+        <tr><td>⑧ 진단</td><td><code>claude doctor</code></td><td>설치/설정 종합 점검</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <span class="label">주의</span><p>native 설치 시 <code>claude</code> 바이너리는 <strong>~/.local/bin/claude</strong>에 위치합니다. macOS 기본 셸은 <strong>zsh</strong>입니다.</p>
+    </div>
+  </section>
+
+  <!-- 1 -->
+  <section id="s1">
+    <h2 class="sec"><span class="num">01</span>언인스톨 (Uninstall)</h2>
+
+    <h3 class="sub">1-1. 설치 방식부터 확인</h3>
+    <p>설치 방식마다 파일 위치가 달라, <strong>잘못된 언인스톨 명령이 "반쯤 지워진 설치"의 가장 흔한 원인</strong>입니다. 먼저 바이너리 경로를 확인합니다.</p>
+<pre><code>which claude
+which -a claude   <span class="c"># PATH 상의 모든 claude 나열 (중복 설치 확인)</span></code></pre>
+    <div class="ph"><span class="k">스크린샷 영역</span><code>which -a claude</code> 결과 — <code>/Users/&lt;사용자&gt;/.local/bin/claude</code> 한 줄만 나오는 정상 케이스</div>
+    <p>이번 시나리오는 <code>curl ... install.sh | bash</code>로 설치했으므로 <strong>native installation</strong>입니다. 출력이 <code>~/.local/bin/claude</code>이면 아래로 진행합니다. 여러 줄이면 중복 설치 → <a class="ref" href="#s8">8번 트러블슈팅</a> 참조.</p>
+
+    <h3 class="sub">1-2. native 언인스톨 (이번 케이스)</h3>
+<pre><code>rm -f ~/.local/bin/claude
+rm -rf ~/.local/share/claude</code></pre>
+    <ul class="plain">
+      <li><code>~/.local/bin/claude</code> : 실행 바이너리</li>
+      <li><code>~/.local/share/claude</code> : 버전 관리 파일</li>
+    </ul>
+
+    <h3 class="sub">1-3. 설정 파일 처리 (선택 · 의사결정 포인트)</h3>
+    <div class="callout warn">
+      <span class="label">주의</span><p>아래를 지우면 설정·허용 도구·MCP 서버 구성·세션 히스토리가 <strong>모두 삭제</strong>됩니다. 재설치 후 그대로 쓸 거면 백업하거나 남겨두세요.</p>
+    </div>
+<pre><code><span class="c"># (선택) 백업 — 재설치 후 복원용</span>
+cp -R ~/.claude ~/.claude.backup
+cp ~/.claude.json ~/.claude.json.backup
+
+<span class="c"># (선택) 완전 초기화 — 깨끗한 첫 화면을 보여주고 싶을 때만</span>
+rm -rf ~/.claude
+rm ~/.claude.json</code></pre>
+    <div class="callout">
+      <span class="label">팁</span><p>"깨끗한 첫 설치 화면"을 녹화하려면 설정도 삭제, "기존 세팅 유지 재설치"를 보여주려면 남겨두세요. VS Code 확장·JetBrains 플러그인·Desktop 앱이 깔려 있으면 실행 시 <code>~/.claude/</code>를 다시 생성합니다.</p>
+    </div>
+
+    <h3 class="sub">1-4. 언인스톨 검증</h3>
+<pre><code>claude --version</code></pre>
+    <ul class="plain">
+      <li>정상이면 <code>zsh: command not found: claude</code> 출력</li>
+      <li>여전히 버전이 나오면 → 중복 설치 또는 오래된 셸 alias 잔존 신호 (<a class="ref" href="#s8">8번</a>)</li>
+    </ul>
+    <div class="ph"><span class="k">스크린샷 영역</span>언인스톨 후 <code>command not found</code> 에러 화면</div>
+  </section>
+
+  <!-- 2 -->
+  <section id="s2">
+    <h2 class="sec"><span class="num">02</span>재설치 (Install)</h2>
+
+    <h3 class="sub">2-1. native 설치 (권장)</h3>
+<pre><code>curl -fsSL https://claude.ai/install.sh | bash</code></pre>
+    <div class="callout"><span class="label">참고</span><p>native 설치는 <strong>백그라운드 자동 업데이트</strong>를 지원합니다. (Homebrew·WinGet·npm은 수동 업데이트)</p></div>
+    <p>설치 완료 시 보통 다음 메시지가 출력됩니다.</p>
+<pre><code><span class="o">✔ Claude Code successfully installed!</span>
+  Version: &lt;버전&gt;
+  Location: ~/.local/bin/claude</code></pre>
+    <div class="ph"><span class="k">스크린샷 영역</span>설치 완료 메시지 + (PATH 미설정 시) <code>~/.local/bin is not in your PATH</code> 경고</div>
+    <div class="callout warn"><span class="label">주의</span><p>설치 직후 <code>~/.local/bin is not in your PATH</code> 경고가 뜨면 <a class="ref" href="#s4">4번(PATH 설정)</a>으로 바로 이동하세요.</p></div>
+
+    <h3 class="sub">2-2. 특정 버전 / stable 채널 (버전 고정이 필요할 때)</h3>
+<pre><code><span class="c"># 최신 버전 (기본)</span>
+curl -fsSL https://claude.ai/install.sh | bash
+
+<span class="c"># stable 채널 (약 1주 지연, 큰 회귀 버그 스킵)</span>
+curl -fsSL https://claude.ai/install.sh | bash -s stable
+
+<span class="c"># 특정 버전 고정 (예시 버전)</span>
+curl -fsSL https://claude.ai/install.sh | bash -s 2.1.89</code></pre>
+    <div class="callout"><span class="label">팁</span><p>화면과 버전을 일치시키려면 특정 버전 고정이 유용합니다. 단, 자동 업데이트로 올라갈 수 있으니 필요 시 <code>settings.json</code>에 채널/최소버전을 명시하세요.</p></div>
+
+    <h3 class="sub">2-3. 대안 설치 방법 (참고)</h3>
+<pre><code><span class="c"># Homebrew — PATH 자동 처리, 자동 업데이트 X (brew upgrade 필요)</span>
+brew install --cask claude-code
+
+<span class="c"># npm 글로벌 — Node.js 18+ 필요, sudo 금지</span>
+npm install -g @anthropic-ai/claude-code</code></pre>
+    <div class="callout warn"><span class="label">주의</span><p><code>sudo npm install -g</code>는 권한·보안 문제를 유발하므로 <strong>사용 금지</strong>입니다. 권한 에러 시 native installer로 전환하세요.</p></div>
+  </section>
+
+  <!-- 3 -->
+  <section id="s3">
+    <h2 class="sec"><span class="num">03</span>버전 확인 (Verify)</h2>
+<pre><code>claude --version</code></pre>
+    <p>정상 출력 예: <code>2.1.x (Claude Code)</code></p>
+    <div class="ph"><span class="k">스크린샷 영역</span><code>claude --version</code> 정상 출력</div>
+    <p>설치 + 설정 + 자동 업데이트 상태를 한 번에 점검하는 종합 진단:</p>
+<pre><code>claude doctor</code></pre>
+    <div class="callout"><span class="label">팁</span><p><code>claude doctor</code>는 PATH·권한·Keychain·최근 자동 업데이트 결과까지 점검합니다. 문제 진단 시 가장 먼저 돌릴 명령.</p></div>
+
+    <h3 class="sub">3-1. <code>claude doctor</code> 출력 읽기</h3>
+    <p>실제 출력은 블록별로 나뉩니다. 아래는 정상 사례와 해석입니다.</p>
+<pre><code>Diagnostics
+  ├ Currently running: native (2.1.162)
+  ├ Platform: darwin-arm64
+  ├ Path: .../.local/share/claude/versions/2.1.162
+  ├ Config install method: native
+  └ Search: OK (bundled)
+Updates
+  ├ Auto-updates: enabled
+  ├ Auto-update channel: latest
+  ├ Last update attempt: success → 2.1.165
+  ├ Stable version: 2.1.153
+  └ Latest version: 2.1.165
+Background server
+  └ Status: not running   Mode: ephemeral
+Remote Control
+  └ Status: enabled  (✓ 항목 다수)</code></pre>
+
+    <table>
+      <thead><tr><th style="width:22%">블록</th><th style="width:38%">핵심 항목</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Diagnostics</strong><br>(설치 상태)</td><td><code>Currently running: native (2.1.x)</code></td><td>현재 실행 버전 + 설치 방식. native면 정상</td></tr>
+        <tr><td></td><td><code>Platform: darwin-arm64</code></td><td>Apple Silicon용 바이너리. 칩셋과 일치하면 OK</td></tr>
+        <tr><td></td><td><code>Path: .../versions/2.1.x</code></td><td>버전별 디렉터리. 같은 줄이 두 번 찍혀도 표시 중복일 뿐 문제 아님</td></tr>
+        <tr><td></td><td><code>Search: OK (bundled)</code></td><td>내장 ripgrep 정상 → 코드 검색 가능</td></tr>
+        <tr><td><strong>Updates</strong><br>(자동 업데이트)</td><td><code>Last update attempt: success → 2.1.165</code></td><td>실행 중(162)보다 최신(165)이 이미 받아진 상태. <strong>재시작 시 적용</strong></td></tr>
+        <tr><td></td><td><code>channel: latest</code> / <code>Stable: 2.1.153</code></td><td>latest=즉시 반영 채널. stable은 한 발 뒤(약 1주 지연)</td></tr>
+        <tr><td><strong>Background server</strong></td><td><code>not running / ephemeral</code></td><td>백그라운드 에이전트 세션 미사용. 안 쓰면 정상 (<code>claude agents</code> 쓸 때만 켜짐)</td></tr>
+        <tr><td><strong>Remote Control</strong></td><td>전부 <code>✓</code></td><td>claude.ai 구독 인증·OAuth·조직 확인 통과 → claude.ai/앱에서 원격 제어 가능</td></tr>
+        <tr><td><strong>GrowthBook / telemetry</strong></td><td><code>growthBookFeaturesLoaded=287</code> 등</td><td>기능 플래그(A/B 롤아웃) 내부 진단값. 일반 사용자는 무시</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><span class="label">참고</span><p>강의에서는 <strong>Diagnostics·Updates</strong> 두 블록만 짚으면 충분합니다. 나머지(Background/Remote/GrowthBook)는 "내부 진단값"으로 넘어가도 됩니다. 유일하게 의미 있는 신호는 "실행 버전보다 최신이 받아져 있으니 재시작하면 올라간다"입니다.</p></div>
+  </section>
+
+  <!-- 4 -->
+  <section id="s4">
+    <h2 class="sec"><span class="num">04</span>PATH 설정 (zshrc / bashrc)</h2>
+    <p>native 설치는 바이너리를 <strong>~/.local/bin/claude</strong>에 둡니다. 셸이 이 디렉터리를 모르면 <code>command not found</code>가 납니다.</p>
+
+    <h3 class="sub">4-1. PATH에 이미 들어있는지 확인</h3>
+<pre><code>echo $PATH | tr ':' '\n' | grep -Fx "$HOME/.local/bin"</code></pre>
+    <ul class="plain">
+      <li><code>/Users/&lt;사용자&gt;/.local/bin</code> 출력 → 이미 설정됨 (<a class="ref" href="#s6">6번 실행</a>으로)</li>
+      <li>아무것도 안 나옴 → 아래에서 추가</li>
+    </ul>
+
+    <h3 class="sub">4-2. zsh (macOS 기본 셸) — 영구 설정</h3>
+<pre><code>echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; ~/.zshrc
+source ~/.zshrc</code></pre>
+
+    <h3 class="sub">4-3. bash 사용 시 — 영구 설정</h3>
+    <p>리눅스/WSL 등 대부분은 <code>~/.bashrc</code>로 충분합니다.</p>
+<pre><code>echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; ~/.bashrc
+source ~/.bashrc</code></pre>
+    <div class="callout warn"><span class="label">주의 (macOS bash)</span><p>macOS에서 bash는 로그인 셸일 때 <code>~/.bashrc</code>가 아니라 <code>~/.bash_profile</code>(또는 <code>~/.profile</code>)을 읽습니다. 새 터미널 창에서 적용이 안 되면 <code>~/.bash_profile</code>이 <code>~/.bashrc</code>를 불러오도록 한 번 연결해 두세요.</p></div>
+<pre><code><span class="c"># .bash_profile 에서 .bashrc 를 불러오게 연결 (최초 1회)</span>
+echo '[ -f ~/.bashrc ] &amp;&amp; . ~/.bashrc' &gt;&gt; ~/.bash_profile
+source ~/.bash_profile</code></pre>
+
+    <h3 class="sub">4-4. 셸별 설정 파일 정리</h3>
+    <p>어느 파일에 넣어야 하는지 헷갈릴 때 참고하세요.</p>
+    <table>
+      <thead><tr><th style="width:14%">셸</th><th style="width:30%">PATH를 넣을 파일</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td><strong>zsh</strong><br>(macOS 기본)</td><td><code>~/.zshrc</code></td><td>대부분 이것으로 충분. 로그인 셸에서만 빠지면 <code>~/.zprofile</code>에도 동일 추가</td></tr>
+        <tr><td><strong>bash</strong><br>(macOS)</td><td><code>~/.bashrc</code> + <code>~/.bash_profile</code> 연결</td><td>로그인 셸이 <code>.bashrc</code>를 안 읽으므로 위 4-3 연결 필요</td></tr>
+        <tr><td><strong>bash</strong><br>(Linux/WSL)</td><td><code>~/.bashrc</code></td><td>연결 없이 보통 바로 동작</td></tr>
+        <tr><td>fish / nushell</td><td>각 셸 전용 설정</td><td>각 셸 문법으로 <code>~/.local/bin</code>을 PATH에 추가</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><span class="label">팁</span><p>본인 셸 확인: <code>echo $SHELL</code> → <code>/bin/zsh</code>면 zsh, <code>/bin/bash</code>면 bash. macOS는 2019년부터 기본이 zsh이므로 대부분 <code>~/.zshrc</code>만 수정하면 됩니다. 두 셸을 오가면 양쪽 모두 추가하세요.</p></div>
+    <div class="callout warn"><span class="label">주의</span><p>큰따옴표 안의 <code>~</code>는 홈 경로로 확장되지 <strong>않습니다</strong>. 반드시 <code>"$HOME/.local/bin:$PATH"</code> 형태로 작성하세요. (자세한 함정은 <a class="ref" href="#s8">8번 T-2</a>)</p></div>
+
+    <h3 class="sub">4-5. 적용 확인</h3>
+<pre><code>claude --version</code></pre>
+    <div class="ph"><span class="k">스크린샷 영역</span>PATH 추가 → <code>source</code> → <code>claude --version</code> 정상 출력까지의 연속 화면</div>
+  </section>
+
+  <!-- 5 -->
+  <section id="s5">
+    <h2 class="sec"><span class="num">05</span>버전 확인이 안 되는 케이스 — 원인과 해결</h2>
+    <p>강의 핵심 파트. 수강생이 가장 많이 막히는 지점입니다.</p>
+
+    <h3 class="sub">5-1. <code>command not found: claude</code> — PATH 누락 (가장 흔함)</h3>
+    <p><strong>원인</strong>: 설치는 됐지만 <code>~/.local/bin</code>이 PATH에 없거나, PATH는 추가했는데 현재 셸이 아직 못 읽음.</p>
+<pre><code><span class="c"># 1) 새 터미널을 열거나</span>
+source ~/.zshrc
+
+<span class="c"># 2) 바이너리가 실제로 있는지 확인</span>
+ls -la ~/.local/bin/claude   <span class="c"># 없으면 설치 실패 → 2번 재설치</span></code></pre>
+    <div class="ph"><span class="k">스크린샷 영역</span><code>ls -la ~/.local/bin/claude</code>로 바이너리 존재 확인</div>
+
+    <h3 class="sub">5-2. 설치 스크립트가 HTML/403 반환 (<code>syntax error near unexpected token '&lt;'</code>)</h3>
+    <p><strong>원인</strong>: 설치 URL이 스크립트 대신 HTML/에러 반환. 네트워크·지역 라우팅·일시 장애, 또는 미지원 국가.</p>
+<pre><code><span class="c"># 다운로드 서버 도달 확인 (HTTP/2 200 이면 도달 성공 → 재시도)</span>
+curl -sI https://downloads.claude.ai/claude-code-releases/latest
+
+<span class="c"># 대안: Homebrew로 설치</span>
+brew install --cask claude-code</code></pre>
+    <div class="callout"><span class="label">참고</span><p>"App unavailable in region"이 보이면 지원 국가가 아닙니다.</p></div>
+
+    <h3 class="sub">5-3. 버전이 이상하다 / 언인스톨했는데 아직 실행됨 — 중복 설치</h3>
+    <p><strong>원인</strong>: native + npm 글로벌 + 레거시 로컬 npm 공존. 어디서 왔는지 모두 확인 후 하나만 남깁니다.</p>
+<pre><code>which -a claude                                   <span class="c"># 모든 claude</span>
+ls -la ~/.local/bin/claude                        <span class="c"># native installer</span>
+ls -la ~/.claude/local/                           <span class="c"># 레거시 로컬 npm</span>
+npm -g ls @anthropic-ai/claude-code 2&gt;/dev/null   <span class="c"># npm 글로벌</span>
+
+<span class="c"># 정리 (native만 남기기 권장)</span>
+npm uninstall -g @anthropic-ai/claude-code
+rm -rf ~/.claude/local</code></pre>
+
+    <h3 class="sub">5-4. macOS에서 <code>dyld: cannot load</code> / <code>Symbol not found</code> / <code>Abort trap: 6</code></h3>
+    <p><strong>원인</strong>: macOS 버전이 바이너리 요구사항보다 낮음. Claude Code는 <strong>macOS 13.0+</strong> 필요.</p>
+    <p><strong>해결</strong>: 사과 메뉴 → "이 Mac에 관하여"에서 버전 확인 후 macOS 업데이트. (Homebrew도 같은 바이너리라 해결 안 됨)</p>
+
+    <h3 class="sub">5-5. <code>Illegal instruction</code></h3>
+    <p><strong>원인</strong>: CPU가 요구 명령어셋(AVX 등) 미지원. 주로 2013년 이전 CPU나 일부 VM. <strong>해결</strong>: native 바이너리 우회책 없음 (Apple Silicon Mac에서는 거의 발생하지 않음).</p>
+
+    <h3 class="sub">5-6. 로그인 후 <code>403 Forbidden</code> (설치는 됐으나 인증 실패)</h3>
+    <p><strong>원인</strong>: 구독 비활성, 또는 셸에 남은 <code>ANTHROPIC_API_KEY</code>가 구독 OAuth를 덮어씀.</p>
+<pre><code>unset ANTHROPIC_API_KEY
+claude
+<span class="c"># ~/.zshrc, ~/.bashrc, ~/.profile 에서 export ANTHROPIC_API_KEY=... 줄 삭제</span></code></pre>
+    <div class="callout"><span class="label">팁</span><p>세션 내 <code>/status</code>로 현재 활성 인증 방식을 확인할 수 있습니다.</p></div>
+  </section>
+
+  <!-- 6 -->
+  <section id="s6">
+    <h2 class="sec"><span class="num">06</span>Claude 실행 (Run)</h2>
+    <div class="callout warn"><span class="label">주의</span><p>반드시 작업할 <strong>프로젝트 폴더</strong>에서 실행하세요. Desktop이나 홈 디렉터리에서 실행하면 안 됩니다.</p></div>
+<pre><code>cd ~/projects/my-app   <span class="c"># 프로젝트 루트로 이동</span>
+claude                 <span class="c"># 대화형 세션 시작</span></code></pre>
+    <p>최초 실행 시 브라우저가 열리며 로그인합니다(Pro/Max/Team/Enterprise/Console 계정 필요). 무료 Claude.ai 플랜은 Claude Code 미포함.</p>
+    <div class="ph"><span class="k">스크린샷 영역</span><code>claude</code> 최초 실행 — 브라우저 OAuth 로그인 흐름</div>
+    <div class="ph"><span class="k">흐름도</span>세션 시작 흐름: cd 프로젝트 → <code>claude</code> 실행 → (최초) 브라우저 로그인 → REPL 진입 → 프롬프트 입력 대기</div>
+  </section>
+
+  <!-- 7 -->
+  <section id="s7">
+    <h2 class="sec"><span class="num">07</span>실행 시 기본 옵션 (macOS)</h2>
+    <div class="callout"><span class="label">참고</span><p><code>claude --help</code>가 모든 플래그를 보여주진 않습니다. 아래는 공식 CLI reference 기준 실무 빈출 옵션입니다.</p></div>
+
+    <h3 class="sub">7-1. 기본 실행 형태</h3>
+    <table>
+      <thead><tr><th style="width:42%">명령</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><code>claude</code></td><td>대화형 세션(REPL) 시작</td></tr>
+        <tr><td><code>claude "질문"</code></td><td>초기 프롬프트와 함께 세션 시작</td></tr>
+        <tr><td><code>claude -p "질문"</code></td><td>1회성 질의 후 종료 (print 모드, 스크립트/CI용)</td></tr>
+        <tr><td><code>cat file | claude -p "분석"</code></td><td>파이프 입력 처리</td></tr>
+        <tr><td><code>claude update</code></td><td>최신 버전 수동 업데이트</td></tr>
+        <tr><td><code>claude doctor</code></td><td>설치/설정 진단</td></tr>
+        <tr><td><code>claude auth login</code></td><td>로그인 (<code>--console</code>로 Console 과금 로그인)</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub">7-2. 세션 관리</h3>
+    <table>
+      <thead><tr><th style="width:34%">플래그</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><code>-c</code>, <code>--continue</code></td><td>현재 디렉터리의 가장 최근 대화 이어가기</td></tr>
+        <tr><td><code>-r</code>, <code>--resume &lt;id|name&gt;</code></td><td>특정 세션 재개 (인자 없으면 선택 UI)</td></tr>
+        <tr><td><code>-n</code>, <code>--name "이름"</code></td><td>세션 표시 이름 지정</td></tr>
+        <tr><td><code>--fork-session</code></td><td>재개 시 원본 보존, 새 세션 ID로 분기</td></tr>
+        <tr><td><code>--session-id &lt;UUID&gt;</code></td><td>특정 세션 ID 지정</td></tr>
+      </tbody>
+    </table>
+<pre><code>claude -c                          <span class="c"># 직전 대화 이어가기</span>
+claude --resume auth-refactor      <span class="c"># 이름으로 세션 재개</span></code></pre>
+
+    <h3 class="sub">7-3. 모델 / 추론 강도</h3>
+    <table>
+      <thead><tr><th style="width:34%">플래그</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><code>--model</code></td><td>모델 지정 (<code>sonnet</code>·<code>opus</code> 별칭 또는 풀네임)</td></tr>
+        <tr><td><code>--effort</code></td><td>추론 강도 <code>low</code>/<code>medium</code>/<code>high</code>/<code>xhigh</code>/<code>max</code> (모델별 가용 범위 상이)</td></tr>
+      </tbody>
+    </table>
+<pre><code>claude --model opus
+claude --effort high</code></pre>
+    <div class="callout"><span class="label">참고</span><p>모델 별칭/풀네임은 시점에 따라 달라질 수 있습니다. 녹화 시 <code>claude --help</code> 또는 공식 문서로 현재 값을 확인하세요.</p></div>
+
+    <h3 class="sub">7-4. 권한 모드 (안전 ↔ 자동화 트레이드오프)</h3>
+    <table>
+      <thead><tr><th style="width:38%">플래그</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><code>--permission-mode &lt;mode&gt;</code></td><td>시작 권한 모드 지정</td></tr>
+        <tr><td><code>--dangerously-skip-permissions</code></td><td>권한 프롬프트 전부 스킵 (= <code>bypassPermissions</code>)</td></tr>
+        <tr><td><code>--allowedTools</code></td><td>프롬프트 없이 실행 허용할 도구 지정</td></tr>
+        <tr><td><code>--tools</code></td><td>사용 가능한 빌트인 도구 자체를 제한</td></tr>
+      </tbody>
+    </table>
+    <p>허용값: <code>default</code>, <code>acceptEdits</code>, <code>plan</code>, <code>auto</code>, <code>dontAsk</code>, <code>bypassPermissions</code></p>
+<pre><code>claude --permission-mode plan
+claude --allowedTools "Read" "Bash(git log *)"</code></pre>
+    <div class="callout warn"><span class="label">주의</span><p><code>--dangerously-skip-permissions</code>는 <strong>샌드박스 환경에서만</strong> 신중히 사용하세요. 세션 중에는 <strong>Shift+Tab</strong>으로 권한 모드를 순환 전환할 수 있습니다.</p></div>
+
+    <h3 class="sub">7-5. 작업 범위 / 컨텍스트</h3>
+    <table>
+      <thead><tr><th style="width:30%">플래그</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><code>--add-dir</code></td><td>추가 작업 디렉터리(읽기/편집) 부여</td></tr>
+        <tr><td><code>-w</code>, <code>--worktree</code></td><td>격리된 git worktree에서 시작</td></tr>
+        <tr><td><code>--mcp-config</code></td><td>JSON에서 MCP 서버 로드</td></tr>
+        <tr><td><code>--bare</code></td><td>최소 모드 — 훅/스킬/플러그인/MCP/CLAUDE.md 자동탐색 스킵 (기동 빠름)</td></tr>
+      </tbody>
+    </table>
+<pre><code>claude --add-dir ../apps ../lib
+claude -w feature-auth</code></pre>
+
+    <h3 class="sub">7-6. 출력 / 디버그 (print 모드·스크립팅)</h3>
+    <table>
+      <thead><tr><th style="width:30%">플래그</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><code>--output-format</code></td><td><code>text</code> / <code>json</code> / <code>stream-json</code></td></tr>
+        <tr><td><code>--max-turns</code></td><td>에이전트 턴 수 제한</td></tr>
+        <tr><td><code>--max-budget-usd</code></td><td>API 지출 상한</td></tr>
+        <tr><td><code>--verbose</code></td><td>턴별 상세 로그</td></tr>
+        <tr><td><code>--debug</code></td><td>디버그 모드 (카테고리 필터, 예 <code>"api,mcp"</code>)</td></tr>
+      </tbody>
+    </table>
+<pre><code>claude -p "이 함수 설명" --output-format json
+claude --model opus --verbose --add-dir src/   <span class="c"># 조합 예</span></code></pre>
+
+    <h3 class="sub">7-7. 시스템 프롬프트 커스터마이즈</h3>
+    <table>
+      <thead><tr><th style="width:42%">플래그</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr><td><code>--append-system-prompt "&lt;텍스트&gt;"</code></td><td>기본 프롬프트 끝에 추가</td></tr>
+        <tr><td><code>--append-system-prompt-file &lt;경로&gt;</code></td><td>파일 내용을 기본 프롬프트에 추가</td></tr>
+        <tr><td><code>--system-prompt "&lt;텍스트&gt;"</code></td><td>기본 프롬프트 전체 교체</td></tr>
+        <tr><td><code>--system-prompt-file &lt;경로&gt;</code></td><td>파일 내용으로 전체 교체</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><span class="label">참고</span><p><code>--system-prompt</code>와 <code>--system-prompt-file</code>은 상호 배타. 프로젝트 공통 규칙은 플래그가 아닌 <strong>CLAUDE.md</strong>에 두는 게 정석입니다.</p></div>
+  </section>
+
+  <!-- 8 트러블슈팅 -->
+  <section id="s8">
+    <h2 class="sec"><span class="num">08</span>트러블슈팅 — 자동 PATH 등록이 안 될 때</h2>
+    <p>설치 스크립트가 PATH를 자동 등록해도 셸 환경에 따라 <code>claude</code>를 못 찾는 경우가 잦습니다. 아래는 zsh/bash에서 가장 흔한 원인 순입니다.</p>
+
+    <h3 class="sub">T-1. <code>source</code> 안 함 / 새 터미널 안 엶 (가장 흔함)</h3>
+    <p>rc 파일을 고쳐도 <strong>현재 셸은 자동으로 다시 읽지 않습니다.</strong> 변경을 적용하려면 둘 중 하나:</p>
+<pre><code>source ~/.zshrc        <span class="c"># 현재 셸에 즉시 반영</span>
+<span class="c"># 또는 터미널 창을 완전히 닫고 새로 열기</span></code></pre>
+
+    <h3 class="sub">T-2. 따옴표 안의 <code>~</code> 는 확장되지 않음 (대표 함정)</h3>
+    <p>가장 많이 하는 실수입니다. 큰따옴표 안의 <code>~</code>는 홈 디렉터리로 <strong>치환되지 않아</strong> PATH에 <code>~/.local/bin</code>이라는 글자 그대로 들어갑니다 → 셸이 못 찾음.</p>
+<pre><code><span class="c"># ✗ 잘못 — 따옴표 안 ~ 는 확장 안 됨</span>
+export PATH="~/.local/bin:$PATH"
+
+<span class="c"># ✓ 올바름 — $HOME 사용 (또는 따옴표 밖에 ~)</span>
+export PATH="$HOME/.local/bin:$PATH"</code></pre>
+    <div class="callout"><span class="label">확인</span><p>이미 잘못 넣었다면 <code>echo $PATH | tr ':' '\n' | grep local</code>로 <code>~/.local/bin</code>(물결표 그대로)이 보이는지 확인 후 rc 파일에서 수정하세요.</p></div>
+
+    <h3 class="sub">T-3. 셸 불일치 — 설치는 zsh 가정, 실제는 bash (또는 반대)</h3>
+    <p>설치 스크립트가 한쪽 rc에만 export를 추가했는데, 실제 사용 셸이 다른 경우입니다.</p>
+<pre><code>echo $SHELL          <span class="c"># /bin/zsh 인지 /bin/bash 인지 확인</span>
+echo $0              <span class="c"># 현재 실행 중인 셸 이름</span></code></pre>
+    <p>본인 셸의 rc 파일에 직접 추가하세요. zsh → <code>~/.zshrc</code>, bash → <code>~/.bashrc</code>. 두 셸을 오가며 쓴다면 양쪽 모두 추가하면 됩니다.</p>
+
+    <h3 class="sub">T-4. zsh: <code>.zshrc</code>는 읽는데 PATH가 사라짐 — 로그인 셸과 <code>.zprofile</code></h3>
+    <p>macOS Terminal/iTerm은 새 창을 보통 <strong>로그인 셸</strong>로 엽니다. zsh 로딩 순서는 <code>.zprofile</code> → <code>.zshrc</code>입니다. <code>.zprofile</code>(또는 <code>/etc/paths</code>)에서 PATH를 통째로 재설정하면 <code>.zshrc</code>에서 앞에 붙인 항목이 밀려날 수 있습니다.</p>
+    <ul class="plain">
+      <li>대부분의 PATH 추가는 <code>~/.zshrc</code>에 두는 것으로 충분합니다.</li>
+      <li>로그인 셸에서만 PATH가 빠진다면 <code>~/.zprofile</code>에도 동일 export를 추가하세요.</li>
+      <li><code>.zprofile</code>이 PATH를 덮어쓰지 않는지(=<code>export PATH="..."</code>로 통째 재할당하는 줄이 있는지) 확인하세요.</li>
+    </ul>
+<pre><code><span class="c"># 로그인 셸에서도 보장하려면</span>
+echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; ~/.zprofile
+source ~/.zprofile</code></pre>
+
+    <h3 class="sub">T-5. bash: macOS에서 <code>.bashrc</code> 가 안 읽힘 — <code>.bash_profile</code></h3>
+    <p>macOS에서 bash는 로그인 셸일 때 <code>.bashrc</code>가 아니라 <code>.bash_profile</code>(또는 <code>.profile</code>)을 읽습니다. <code>.bashrc</code>에만 넣으면 새 창에서 적용 안 될 수 있습니다.</p>
+<pre><code><span class="c"># .bash_profile 에서 .bashrc 를 불러오게 연결 (한 번만)</span>
+echo '[ -f ~/.bashrc ] && . ~/.bashrc' &gt;&gt; ~/.bash_profile
+
+<span class="c"># 그리고 PATH 는 .bashrc 에 추가</span>
+echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; ~/.bashrc
+source ~/.bash_profile</code></pre>
+
+    <h3 class="sub">T-6. 중복 export / 순서 문제</h3>
+    <p>같은 export가 여러 줄 쌓였거나, 뒤쪽 줄이 PATH를 덮어쓰면 의도와 달라집니다.</p>
+<pre><code><span class="c"># rc 파일에서 중복 라인 확인</span>
+grep -n 'local/bin' ~/.zshrc ~/.zprofile ~/.bashrc ~/.bash_profile 2&gt;/dev/null
+
+<span class="c"># 현재 PATH 항목을 줄 단위로 보기 (중복/순서 점검)</span>
+echo $PATH | tr ':' '\n'</code></pre>
+    <p>중복 줄은 정리하고, <code>~/.local/bin</code>이 다른 동일 이름 바이너리보다 <strong>앞</strong>에 오도록 <code>:$PATH</code> 형태(앞에 prepend)로 유지하세요.</p>
+
+    <h3 class="sub">T-7. PATH는 맞는데 바이너리 권한 문제</h3>
+<pre><code><span class="c"># 실행 권한/존재 확인</span>
+ls -la ~/.local/bin/claude
+
+<span class="c"># 디렉터리 쓰기 권한 확인</span>
+test -w ~/.local/bin &amp;&amp; echo writable || echo "not writable"
+
+<span class="c"># 소유권이 root 등으로 꼬였다면 (sudo 설치 후유증)</span>
+sudo chown -R $(whoami) ~/.local</code></pre>
+    <div class="callout warn"><span class="label">주의</span><p>과거 <code>sudo</code>로 설치했다면 소유권이 root로 잡혀 PATH가 맞아도 실행/업데이트가 막힐 수 있습니다. 위 <code>chown</code>으로 사용자 소유로 되돌리세요.</p></div>
+
+    <h3 class="sub">T-8. VS Code·IDE 내장 터미널에서만 못 찾음</h3>
+    <p>IDE 내장 터미널이 로그인 셸 환경을 상속하지 못한 경우입니다. 일반 터미널에선 되는데 IDE에서만 안 되면:</p>
+    <ul class="plain">
+      <li>IDE를 완전히 종료 후, PATH가 잡힌 <strong>터미널에서 IDE를 실행</strong>해 환경을 상속시키기</li>
+      <li>또는 IDE 설정에서 통합 터미널을 "로그인 셸로 실행" 옵션 활성화</li>
+      <li>그래도 안 되면 IDE 터미널에서 <code>source ~/.zshrc</code> 후 <code>which claude</code> 확인</li>
+    </ul>
+
+    <h3 class="sub">T-9. 마지막 수단 — 종합 진단</h3>
+<pre><code>claude doctor   <span class="c"># PATH·권한·Keychain·업데이트 상태 한 번에 점검</span></code></pre>
+    <p>그래도 해결이 안 되면 <code>claude --version</code> 동작 여부, 실행한 설치 명령, 전체 에러 출력을 모아 <a class="ref" href="https://github.com/anthropics/claude-code/issues">GitHub Issues</a>에서 동일 사례를 검색하거나 새로 등록하세요.</p>
+
+    <div class="ph"><span class="k">흐름도</span>진단 분기: <code>claude --version</code> 실패 → 바이너리 존재? (없음→재설치 / 있음→PATH 점검) → 따옴표 ~ 함정 → 셸 불일치 → 로그인 셸 rc(.zprofile/.bash_profile) → 권한 → <code>claude doctor</code></div>
+  </section>
+
+  <!-- 9 검증 -->
+  <section id="s9">
+    <h2 class="sec"><span class="num">09</span>검증 노트 &amp; 출처</h2>
+    <p>Claude Code 공식 문서로 교차 검증했습니다. 1차 출처 우선.</p>
+    <table>
+      <thead><tr><th style="width:54%">항목</th><th style="width:14%">상태</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td>native 설치/언인스톨 명령, 설정 파일 위치</td><td><span class="badge ok">확인</span></td><td>Advanced setup</td></tr>
+        <tr><td>바이너리 위치 <code>~/.local/bin/claude</code>, PATH 추가(zsh/bash)</td><td><span class="badge ok">확인</span></td><td>Troubleshoot install</td></tr>
+        <tr><td>버전 확인 <code>claude --version</code> / <code>claude doctor</code></td><td><span class="badge ok">확인</span></td><td>Advanced setup</td></tr>
+        <tr><td>중복 설치 점검, dyld / Illegal instruction / 403 케이스</td><td><span class="badge ok">확인</span></td><td>Troubleshoot install</td></tr>
+        <tr><td>macOS 13.0+ 요구, 4GB+ RAM</td><td><span class="badge ok">확인</span></td><td>Advanced setup</td></tr>
+        <tr><td>CLI 플래그 전반 / <code>--permission-mode</code> 허용값</td><td><span class="badge ok">확인</span></td><td>CLI reference</td></tr>
+        <tr><td>무료 플랜 Claude Code 미포함</td><td><span class="badge ok">확인</span></td><td>Advanced setup</td></tr>
+        <tr><td><code>~</code> 따옴표 미확장, 로그인 셸 rc 순서 등 셸 일반 동작</td><td><span class="badge ok">확인</span></td><td>POSIX/zsh·bash 셸 표준 동작</td></tr>
+        <tr><td>특정 버전 예시 <code>2.1.89</code></td><td><span class="badge warn">참고</span></td><td>문서 예시 버전. 실제 최신은 녹화 시점 확인</td></tr>
+        <tr><td>모델 별칭/풀네임 (<code>sonnet</code>/<code>opus</code> 등)</td><td><span class="badge warn">재검증</span></td><td>모델 라인업 수시 변동. 녹화 시점 재확인</td></tr>
+      </tbody>
+    </table>
+
+    <footer class="doc">
+      <p><strong>참고 1차 출처</strong></p>
+      <ul class="plain">
+        <li>설치/언인스톨: <a href="https://code.claude.com/docs/en/setup">code.claude.com/docs/en/setup</a></li>
+        <li>설치 트러블슈팅: <a href="https://code.claude.com/docs/en/troubleshoot-install">code.claude.com/docs/en/troubleshoot-install</a></li>
+        <li>CLI 레퍼런스: <a href="https://code.claude.com/docs/en/cli-reference">code.claude.com/docs/en/cli-reference</a></li>
+      </ul>
+      <p style="margin-top:14px">버전 번호·모델명만 시점 의존 항목으로 표시했습니다. 명령·경로·플래그·셸 동작은 공식 문서 및 셸 표준에서 직접 확인했습니다.</p>
+    </footer>
+  </section>
+
+</div>
+<script>
+/* 임베드 안전 패치 — run-ai.kr 등이 이 문서를 sandbox iframe(origin null)으로 임베드할 때:
+   1) 네이티브 #hash 앵커 클릭이 상위 SPA URL을 바꿔 라우터 재렌더 크래시를 유발 → scrollIntoView로 대체
+   2) sandbox에서 navigator.clipboard 부재 시 복사 버튼이 죽음 → execCommand 폴백 주입 */
+document.addEventListener('click', function(e){
+  var a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (!href || href.length < 2) return;
+  var el = document.getElementById(href.slice(1));
+  if (!el) return;
+  e.preventDefault();
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+if (!navigator.clipboard || !navigator.clipboard.writeText) {
+  try {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: function(t){
+      var ta = document.createElement('textarea'); ta.value = t;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (err) {}
+      ta.remove(); return Promise.resolve();
+    } } });
+  } catch (err) {}
+}
+</script>
+</body>
+</html>
